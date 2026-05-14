@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Camera Image to Text & PDF Converter</title>
+    
+    <!-- Tesseract.js for Text Scanning & jsPDF for PDF Generation -->
+    <script src="jsdelivr.net"></script>
+    <script src="cloudflare.com"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        }
+        video, canvas {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            background: #000;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        button:hover { background-color: #0056b3; }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+        #output-box {
+            width: 100%;
+            height: 150px;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        #status { font-weight: bold; color: #ff5722; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📸 Paper To Text & PDF Scanner</h2>
+    
+    <!-- Live Camera View -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    
+    <br>
+    <button id="capture-btn">📷 Take Picture</button>
+    
+    <div id="status">Status: Camera Ready</div>
+
+    <h3>Extracted Text:</h3>
+    <textarea id="output-box" placeholder="Your scanned text will appear here..."></textarea>
+    
+    <br>
+    <!-- Download Buttons -->
+    <button id="download-txt" class="btn-success" disabled>📥 Download TXT</button>
+    <button id="download-pdf" class="btn-success" disabled>📄 Download PDF</button>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('capture-btn');
+    const outputBox = document.getElementById('output-box');
+    const statusText = document.getElementById('status');
+    const downloadTxtBtn = document.getElementById('download-txt');
+    const downloadPdfBtn = document.getElementById('download-pdf');
+
+    // 1. Access Mobile/Laptop Back Camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => {
+            statusText.innerText = "Error: Camera access denied!";
+            console.error(err);
+        });
+
+    // 2. Capture Photo & Process Text (OCR)
+    captureBtn.addEventListener('click', () => {
+        statusText.innerText = "Processing Image... Please Wait...";
+        outputBox.value = "";
+        
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas image to base64 for OCR
+        const imageData = canvas.toDataURL('image/png');
+
+        // Run Tesseract OCR
+        Tesseract.recognize(imageData, 'eng')
+            .then(({ data: { text } }) => {
+                if(text.trim() === "") {
+                    statusText.innerText = "No text found! Try again with clear light.";
+                } else {
+                    outputBox.value = text;
+                    statusText.innerText = "Text Extracted Successfully!";
+                    downloadTxtBtn.disabled = false;
+                    downloadPdfBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                statusText.innerText = "Error scanning image.";
+                console.error(error);
+            });
+    });
+
+    // 3. Download as Text File
+    downloadTxtBtn.addEventListener('click', () => {
+        const blob = new Blob([outputBox.value], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "ScannedText.txt";
+        link.click();
+    });
+
+    // 4. Download as PDF File
+    downloadPdfBtn.addEventListener('click', () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Handle word wrapping in PDF
+        const splitText = doc.splitTextToSize(outputBox.value, 180);
+        doc.text(splitText, 10, 10);
+        doc.save("ScannedDocument.pdf");
+    });
+</script>
+
+</body>
+</html>
