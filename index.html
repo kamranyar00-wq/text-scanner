@@ -1,126 +1,320 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Fast Cloud OCR Scanner</title>
-    
-    <!-- jsPDF Library for PDF Generation -->
-    <script src="cloudflare.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Super Fast OCR Scanner</title>
+
+    <!-- jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; margin: 0; padding: 15px; }
-        .container { max-width: 500px; background: white; padding: 20px; margin: 0 auto; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
-        video { width: 100%; border-radius: 8px; background: #000; height: auto; }
-        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; margin: 10px 5px; font-weight: bold; width: 90%; }
-        button:hover { background-color: #0056b3; }
-        .btn-success { background-color: #28a745; }
-        .btn-success:disabled, button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        #output-box { width: 100%; height: 150px; margin-top: 15px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        #status { font-weight: bold; color: #ff5722; margin: 10px 0; font-size: 16px; }
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial, sans-serif;
+            background:#f4f7f6;
+            padding:20px;
+            text-align:center;
+        }
+
+        .container{
+            max-width:550px;
+            margin:auto;
+            background:white;
+            padding:20px;
+            border-radius:12px;
+            box-shadow:0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h2{
+            margin-bottom:15px;
+            color:#333;
+        }
+
+        video{
+            width:100%;
+            border-radius:10px;
+            background:black;
+            margin-bottom:15px;
+        }
+
+        button{
+            width:100%;
+            padding:14px;
+            margin-top:10px;
+            border:none;
+            border-radius:8px;
+            font-size:16px;
+            font-weight:bold;
+            cursor:pointer;
+            transition:0.3s;
+        }
+
+        #capture-btn{
+            background:#007bff;
+            color:white;
+        }
+
+        #capture-btn:hover{
+            background:#0056b3;
+        }
+
+        .download-btn{
+            background:#28a745;
+            color:white;
+        }
+
+        .download-btn:hover{
+            background:#1f7e34;
+        }
+
+        button:disabled{
+            background:#cccccc;
+            cursor:not-allowed;
+        }
+
+        #status{
+            margin-top:15px;
+            font-weight:bold;
+            color:#ff5722;
+        }
+
+        textarea{
+            width:100%;
+            height:180px;
+            margin-top:15px;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #ccc;
+            resize:none;
+            font-size:15px;
+        }
+
+        canvas{
+            display:none;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="container">
-    <h2>📸 Paper To Text & PDF Scanner</h2>
-    
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    
-    <br>
-    <button id="capture-btn">📷 Take Picture & Scan</button>
-    
-    <div id="status">Status: Ready to Scan</div>
 
-    <h3>Extracted Text:</h3>
-    <textarea id="output-box" placeholder="Your scanned text will appear here..."></textarea>
-    
-    <br>
-    <button id="download-txt" class="btn-success" disabled>📥 Download TXT</button>
-    <button id="download-pdf" class="btn-success" disabled>📄 Download PDF</button>
+    <h2>📸 Paper To Text & PDF Scanner</h2>
+
+    <video id="video" autoplay playsinline></video>
+
+    <canvas id="canvas"></canvas>
+
+    <button id="capture-btn">
+        📷 Capture & Scan Text
+    </button>
+
+    <div id="status">
+        Status: Camera Starting...
+    </div>
+
+    <textarea 
+        id="output-box" 
+        placeholder="Scanned text will appear here..."
+    ></textarea>
+
+    <button id="download-txt" class="download-btn" disabled>
+        📥 Download TXT
+    </button>
+
+    <button id="download-pdf" class="download-btn" disabled>
+        📄 Download PDF
+    </button>
+
 </div>
 
 <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('capture-btn');
-    const outputBox = document.getElementById('output-box');
-    const statusText = document.getElementById('status');
-    const downloadTxtBtn = document.getElementById('download-txt');
-    const downloadPdfBtn = document.getElementById('download-pdf');
 
-    // Initialize Back Camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 768 } } })
-        .then(stream => { video.srcObject = stream; })
-        .catch(err => { statusText.innerText = "Camera error. Check permissions!"; });
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("capture-btn");
+const outputBox = document.getElementById("output-box");
+const statusText = document.getElementById("status");
+const downloadTxtBtn = document.getElementById("download-txt");
+const downloadPdfBtn = document.getElementById("download-pdf");
 
-    captureBtn.addEventListener('click', () => {
-        statusText.innerText = "⏳ Scanning Server se connect ho raha hai...";
+
+// ==========================
+// START CAMERA
+// ==========================
+
+async function startCamera() {
+
+    try {
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        statusText.innerText = "✅ Camera Ready";
+
+    } catch (error) {
+
+        console.error(error);
+
+        statusText.innerText = "❌ Camera Access Denied";
+
+    }
+
+}
+
+startCamera();
+
+
+// ==========================
+// SCAN IMAGE
+// ==========================
+
+captureBtn.addEventListener("click", async () => {
+
+    try {
+
         captureBtn.disabled = true;
+
         outputBox.value = "";
-        
-        const context = canvas.getContext('2d');
+
+        statusText.innerText = "⏳ Capturing Image...";
+
+        const context = canvas.getContext("2d");
+
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Image compression for super fast upload
-        const imageData = canvas.toDataURL('image/jpeg', 0.6);
 
-        // Prepare Data for Free OCR Space API
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Compress image
+        const imageData = canvas.toDataURL("image/jpeg", 0.7);
+
         const formData = new FormData();
+
         formData.append("base64Image", imageData);
         formData.append("language", "eng");
-        formData.append("apikey", "K87342898888957"); // Free Public API Key
+        formData.append("apikey", "helloworld");
 
-        statusText.innerText = "⚡ AI Text Extract kar raha hai... (Sirf 2 Sec)";
+        statusText.innerText = "⚡ Extracting Text...";
 
-        // Send to Cloud Server
-        fetch("ocr.space", {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(result => {
-            captureBtn.disabled = false;
-            if (result.ParsedResults && result.ParsedResults.length > 0) {
-                const text = result.ParsedResults[0].ParsedText;
-                if(text.trim() === "") {
-                    statusText.innerText = "❌ No text found! Please hold camera steady.";
-                } else {
-                    outputBox.value = text;
-                    statusText.innerText = "✅ Done! Text Extracted.";
-                    downloadTxtBtn.disabled = false;
-                    downloadPdfBtn.disabled = false;
-                }
-            } else {
-                statusText.innerText = "❌ Scan Failed. Try again.";
+        const response = await fetch(
+            "https://api.ocr.space/parse/image",
+            {
+                method: "POST",
+                body: formData
             }
-        })
-        .catch(error => {
-            captureBtn.disabled = false;
-            statusText.innerText = "❌ Server error. Check internet connection.";
-            console.error(error);
-        });
-    });
+        );
 
-    downloadTxtBtn.addEventListener('click', () => {
-        const blob = new Blob([outputBox.value], { type: "text/plain;charset=utf-8" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "ScannedText.txt";
-        link.click();
-    });
+        const result = await response.json();
 
-    downloadPdfBtn.addEventListener('click', () => {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const splitText = doc.splitTextToSize(outputBox.value, 180);
-        doc.text(splitText, 10, 10);
-        doc.save("ScannedDocument.pdf");
-    });
+        captureBtn.disabled = false;
+
+        if (
+            result.ParsedResults &&
+            result.ParsedResults.length > 0
+        ) {
+
+            const text =
+                result.ParsedResults[0].ParsedText;
+
+            if (text.trim() === "") {
+
+                statusText.innerText =
+                    "❌ No Text Found";
+
+            } else {
+
+                outputBox.value = text;
+
+                statusText.innerText =
+                    "✅ Text Extracted Successfully";
+
+                downloadTxtBtn.disabled = false;
+                downloadPdfBtn.disabled = false;
+
+            }
+
+        } else {
+
+            statusText.innerText =
+                "❌ OCR Failed";
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        captureBtn.disabled = false;
+
+        statusText.innerText =
+            "❌ Internet or Server Error";
+
+    }
+
+});
+
+
+// ==========================
+// DOWNLOAD TXT
+// ==========================
+
+downloadTxtBtn.addEventListener("click", () => {
+
+    const blob = new Blob(
+        [outputBox.value],
+        { type: "text/plain" }
+    );
+
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+
+    link.download = "ScannedText.txt";
+
+    link.click();
+
+});
+
+
+// ==========================
+// DOWNLOAD PDF
+// ==========================
+
+downloadPdfBtn.addEventListener("click", () => {
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    const lines = doc.splitTextToSize(
+        outputBox.value,
+        180
+    );
+
+    doc.text(lines, 10, 10);
+
+    doc.save("ScannedDocument.pdf");
+
+});
+
 </script>
 
 </body>
 </html>
+```
