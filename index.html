@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Paper To Text Scanner</title>
+    <title>Super Fast Cloud OCR Scanner</title>
     
-    <!-- Ultra Fast Tesseract & jsPDF Libraries -->
-    <script src="cloudflare.com"></script>
+    <!-- jsPDF Library for PDF Generation -->
     <script src="cloudflare.com"></script>
 
     <style>
@@ -16,7 +15,7 @@
         button { background-color: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; margin: 10px 5px; font-weight: bold; width: 90%; }
         button:hover { background-color: #0056b3; }
         .btn-success { background-color: #28a745; }
-        .btn-success:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .btn-success:disabled, button:disabled { background-color: #cccccc; cursor: not-allowed; }
         #output-box { width: 100%; height: 150px; margin-top: 15px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
         #status { font-weight: bold; color: #ff5722; margin: 10px 0; font-size: 16px; }
     </style>
@@ -51,13 +50,13 @@
     const downloadTxtBtn = document.getElementById('download-txt');
     const downloadPdfBtn = document.getElementById('download-pdf');
 
-    // Fast back camera initialization
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } })
+    // Initialize Back Camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 768 } } })
         .then(stream => { video.srcObject = stream; })
         .catch(err => { statusText.innerText = "Camera error. Check permissions!"; });
 
     captureBtn.addEventListener('click', () => {
-        statusText.innerText = "⏳ Processing image with AI... (Takes 3-5 Sec)";
+        statusText.innerText = "⏳ Scanning Server se connect ho raha hai...";
         captureBtn.disabled = true;
         outputBox.value = "";
         
@@ -66,25 +65,44 @@
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        const imageData = canvas.toDataURL('image/jpeg', 0.8); // Compressed for faster loading
+        // Image compression for super fast upload
+        const imageData = canvas.toDataURL('image/jpeg', 0.6);
 
-        // Fast Tesseract Engine
-        Tesseract.recognize(imageData, 'eng', { logger: m => console.log(m) })
-            .then(({ data: { text } }) => {
-                captureBtn.disabled = false;
+        // Prepare Data for Free OCR Space API
+        const formData = new FormData();
+        formData.append("base64Image", imageData);
+        formData.append("language", "eng");
+        formData.append("apikey", "K87342898888957"); // Free Public API Key
+
+        statusText.innerText = "⚡ AI Text Extract kar raha hai... (Sirf 2 Sec)";
+
+        // Send to Cloud Server
+        fetch("ocr.space", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            captureBtn.disabled = false;
+            if (result.ParsedResults && result.ParsedResults.length > 0) {
+                const text = result.ParsedResults[0].ParsedText;
                 if(text.trim() === "") {
-                    statusText.innerText = "❌ No clear text found! Focus properly.";
+                    statusText.innerText = "❌ No text found! Please hold camera steady.";
                 } else {
                     outputBox.value = text;
                     statusText.innerText = "✅ Done! Text Extracted.";
                     downloadTxtBtn.disabled = false;
                     downloadPdfBtn.disabled = false;
                 }
-            })
-            .catch(error => {
-                captureBtn.disabled = false;
-                statusText.innerText = "❌ Error occurred while scanning.";
-            });
+            } else {
+                statusText.innerText = "❌ Scan Failed. Try again.";
+            }
+        })
+        .catch(error => {
+            captureBtn.disabled = false;
+            statusText.innerText = "❌ Server error. Check internet connection.";
+            console.error(error);
+        });
     });
 
     downloadTxtBtn.addEventListener('click', () => {
