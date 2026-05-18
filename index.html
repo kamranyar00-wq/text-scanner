@@ -3,96 +3,62 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Super Fast Free OCR & Excel Scanner</title>
+<title>OCR Scanner Pro (Urdu + English)</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
 
 body{
-    font-family:Arial, sans-serif;
-    background:#f4f7f6;
-    padding:20px;
-    text-align:center;
+font-family:Arial;
+background:#f4f7f6;
+padding:20px;
+text-align:center;
 }
 
 .container{
-    max-width:550px;
-    margin:auto;
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-
-h2{
-    margin-bottom:15px;
-    color:#333;
+max-width:550px;
+margin:auto;
+background:#fff;
+padding:20px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
 
 video{
-    width:100%;
-    max-height:400px;
-    background:black;
-    border-radius:10px;
-    object-fit:cover;
-    margin-bottom:15px;
+width:100%;
+background:black;
+border-radius:10px;
+margin-bottom:15px;
+object-fit:cover;
 }
 
 button{
-    width:100%;
-    padding:14px;
-    margin-top:10px;
-    border:none;
-    border-radius:8px;
-    font-size:16px;
-    font-weight:bold;
-    cursor:pointer;
+width:100%;
+padding:14px;
+margin-top:10px;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
 }
 
-#capture-btn{
-    background:#007bff;
-    color:white;
-}
-
-.download-btn{
-    background:#28a745;
-    color:white;
-}
-
-#download-excel{
-    background:#ff9800;
-    color:white;
-}
-
-button:disabled{
-    background:#cccccc;
-    cursor:not-allowed;
-}
-
-#status{
-    margin-top:15px;
-    font-weight:bold;
-    color:#ff5722;
-}
+#capture-btn{background:#007bff;color:white;}
+.download-btn{background:#28a745;color:white;}
+#download-excel{background:#ff9800;color:white;}
 
 textarea{
-    width:100%;
-    height:180px;
-    margin-top:15px;
-    padding:12px;
-    border-radius:8px;
-    border:1px solid #ccc;
-    resize:none;
-    font-size:15px;
+width:100%;
+height:180px;
+margin-top:15px;
+padding:10px;
+border-radius:8px;
+border:1px solid #ccc;
 }
 
-canvas{
-    display:none;
-}
+#status{margin-top:10px;color:#ff5722;font-weight:bold;}
 </style>
 </head>
 
@@ -100,472 +66,151 @@ canvas{
 
 <div class="container">
 
-<h2>📸 Paper To Text & Excel Scanner</h2>
+<h2>📸 OCR Scanner Pro (Urdu + English)</h2>
 
 <video id="video" autoplay playsinline muted></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
-<canvas id="canvas"></canvas>
+<button id="capture-btn">📷 Capture & Scan</button>
 
-<button id="capture-btn">
-📷 Capture & Scan Text
-</button>
+<div id="status">Starting Camera...</div>
 
-<div id="status">
-Status: Starting Camera...
-</div>
+<textarea id="output-box" placeholder="Scanned text..."></textarea>
 
-<textarea
-id="output-box"
-placeholder="Scanned text will appear here..."
-></textarea>
-
-<button
-id="download-txt"
-class="download-btn"
-disabled>
-📥 Download TXT
-</button>
-
-<button
-id="download-pdf"
-class="download-btn"
-disabled>
-📄 Download PDF
-</button>
-
-<button
-id="download-excel"
-class="download-btn"
-disabled>
-📊 Download EXCEL (.xlsx)
-</button>
+<button id="download-txt" class="download-btn" disabled>📥 TXT</button>
+<button id="download-pdf" class="download-btn" disabled>📄 PDF</button>
+<button id="download-excel" class="download-btn" disabled>📊 EXCEL</button>
 
 </div>
 
 <script>
 
-const video =
-document.getElementById("video");
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("capture-btn");
+const outputBox = document.getElementById("output-box");
+const statusText = document.getElementById("status");
 
-const canvas =
-document.getElementById("canvas");
+const txtBtn = document.getElementById("download-txt");
+const pdfBtn = document.getElementById("download-pdf");
+const excelBtn = document.getElementById("download-excel");
 
-const captureBtn =
-document.getElementById("capture-btn");
+let stream = null;
 
-const outputBox =
-document.getElementById("output-box");
-
-const statusText =
-document.getElementById("status");
-
-const downloadTxtBtn =
-document.getElementById("download-txt");
-
-const downloadPdfBtn =
-document.getElementById("download-pdf");
-
-const downloadExcelBtn =
-document.getElementById("download-excel");
-
-let currentStream = null;
-
-// LOAD SCRIPT
-function loadScript(src){
-
-return new Promise((resolve)=>{
-
-const script =
-document.createElement("script");
-
-script.src = src;
-
-script.onload =
-()=> resolve(true);
-
-script.onerror =
-()=> resolve(false);
-
-document.head.appendChild(script);
-
-});
-
-}
-
-// CAMERA START
+/* CAMERA (UNCHANGED BUT FIXED) */
 async function startCamera(){
-
 try{
 
-statusText.innerText =
-"⏳ Opening Camera...";
-
-if(currentStream){
-currentStream
-.getTracks()
-.forEach(track=>track.stop());
-}
-
-const constraints = {
-video:{
-facingMode:{
-ideal:"environment"
-},
-width:{
-ideal:1280
-},
-height:{
-ideal:720
-}
-},
-audio:false
-};
-
-currentStream =
-await navigator
-.mediaDevices
-.getUserMedia(constraints);
-
-video.srcObject =
-currentStream;
-
-await video.play();
-
-statusText.innerText =
-"✅ Back Camera Loaded";
-
-}catch(error){
-
-console.error(error);
-
-try{
-
-currentStream =
-await navigator
-.mediaDevices
-.getUserMedia({
-video:true,
+stream = await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"environment"},
 audio:false
 });
 
-video.srcObject =
-currentStream;
-
+video.srcObject = stream;
 await video.play();
 
-statusText.innerText =
-"✅ Camera Active";
-
-}catch(finalError){
-
-console.error(finalError);
-
-statusText.innerText =
-"❌ Camera Permission Blocked";
-
-}
-
-}
-
-}
-
-// PAGE LOAD
-window.addEventListener(
-"load",
-()=>{
-setTimeout(()=>{
-startCamera();
-},500);
-}
-);
-
-// SCAN BUTTON
-captureBtn.addEventListener(
-"click",
-async ()=>{
-
-try{
-
-captureBtn.disabled =
-true;
-
-outputBox.value = "";
-
-statusText.innerText =
-"⏳ Loading OCR...";
-
-// LOAD LIBRARIES
-if(
-typeof Tesseract ===
-"undefined"
-){
-await loadScript(
-"https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"
-);
-}
-
-if(
-typeof XLSX ===
-"undefined"
-){
-await loadScript(
-"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
-);
-}
-
-if(
-typeof window.jspdf ===
-"undefined"
-){
-await loadScript(
-"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-);
-}
-
-// CAMERA READY CHECK
-if(
-video.videoWidth === 0
-){
-
-statusText.innerText =
-"❌ Camera Not Ready";
-
-captureBtn.disabled =
-false;
-
-return;
-}
-
-statusText.innerText =
-"📸 Capturing...";
-
-const context =
-canvas.getContext("2d");
-
-canvas.width =
-video.videoWidth;
-
-canvas.height =
-video.videoHeight;
-
-context.drawImage(
-video,
-0,
-0,
-canvas.width,
-canvas.height
-);
-
-const imageData =
-canvas.toDataURL(
-"image/jpeg",
-1
-);
-
-statusText.innerText =
-"⚡ Scanning Text...";
-
-const result =
-await Tesseract
-.recognize(
-imageData,
-"eng",
-{
-logger:(m)=>{
-
-if(
-m.progress
-){
-
-statusText.innerText =
-`⚡ Scanning ${Math.floor(m.progress * 100)}%`;
-
-}
-
-}
-}
-);
-
-const scannedText =
-result.data.text;
-
-captureBtn.disabled =
-false;
-
-if(
-!scannedText.trim()
-){
-
-statusText.innerText =
-"❌ No Text Found";
-
-return;
-
-}
-
-outputBox.value =
-scannedText;
-
-statusText.innerText =
-"✅ Scan Successful";
-
-downloadTxtBtn.disabled =
-false;
-
-downloadPdfBtn.disabled =
-false;
-
-downloadExcelBtn.disabled =
-false;
-
-}catch(error){
-
-console.error(error);
-
-captureBtn.disabled =
-false;
-
-statusText.innerText =
-"❌ Scanner Failed";
-
-}
-
-}
-);
-
-// TXT DOWNLOAD
-downloadTxtBtn
-.addEventListener(
-"click",
-()=>{
-
-const blob =
-new Blob(
-[outputBox.value],
-{
-type:"text/plain"
-}
-);
-
-const link =
-document
-.createElement("a");
-
-link.href =
-URL.createObjectURL(blob);
-
-link.download =
-"ScannedText.txt";
-
-link.click();
-
-}
-);
-
-// PDF DOWNLOAD
-downloadPdfBtn
-.addEventListener(
-"click",
-()=>{
-
-try{
-
-const {
-jsPDF
-} =
-window.jspdf;
-
-const doc =
-new jsPDF();
-
-const lines =
-doc.splitTextToSize(
-outputBox.value,
-180
-);
-
-doc.text(
-lines,
-10,
-10
-);
-
-doc.save(
-"ScannedDocument.pdf"
-);
+statusText.innerText = "✅ Camera Ready";
 
 }catch(e){
-
-console.error(e);
-
+statusText.innerText = "❌ Camera Blocked";
+}
 }
 
+window.addEventListener("load",()=>{
+setTimeout(startCamera,500);
+});
+
+/* OCR */
+captureBtn.addEventListener("click",async ()=>{
+
+captureBtn.disabled = true;
+outputBox.value = "";
+statusText.innerText = "⏳ Loading OCR...";
+
+if(typeof Tesseract === "undefined"){
+await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js");
 }
-);
 
-// EXCEL DOWNLOAD
-downloadExcelBtn
-.addEventListener(
-"click",
-()=>{
-
-if(
-typeof XLSX ===
-"undefined"
-)return;
-
-const rows = [];
-
-outputBox.value
-.split("\n")
-.forEach(line=>{
-
-if(line.trim()){
-
-rows.push(
-line.split(
-/\s{2,}|\t/
-)
-);
-
+function loadScript(src){
+return new Promise((res)=>{
+const s=document.createElement("script");
+s.src=src;
+s.onload=()=>res(true);
+document.head.appendChild(s);
+});
 }
+
+/* CAMERA CHECK */
+if(video.videoWidth === 0){
+statusText.innerText = "❌ Camera Not Ready";
+captureBtn.disabled = false;
+return;
+}
+
+/* CAPTURE */
+canvas.width = video.videoWidth;
+canvas.height = video.videoHeight;
+
+const ctx = canvas.getContext("2d");
+ctx.drawImage(video,0,0);
+
+const img = canvas.toDataURL("image/jpeg",0.8);
+
+/* OCR (URDU + ENGLISH) */
+const result = await Tesseract.recognize(img,"eng+urd",{
+logger:m=>{
+if(m.status==="recognizing text"){
+statusText.innerText = `⚡ ${Math.floor(m.progress*100)}%`;
+}
+}
+});
+
+const text = result.data.text;
+
+captureBtn.disabled = false;
+
+if(!text.trim()){
+statusText.innerText = "❌ No Text Found";
+return;
+}
+
+outputBox.value = text;
+statusText.innerText = "✅ Done";
+
+txtBtn.disabled = false;
+pdfBtn.disabled = false;
+excelBtn.disabled = false;
 
 });
 
-const wb =
-XLSX.utils
-.book_new();
+/* TXT */
+txtBtn.onclick=()=>{
+const b=new Blob([outputBox.value],{type:"text/plain"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(b);
+a.download="text.txt";
+a.click();
+};
 
-const ws =
-XLSX.utils
-.aoa_to_sheet(rows);
+/* PDF */
+pdfBtn.onclick=()=>{
+const {jsPDF}=window.jspdf;
+const doc=new jsPDF();
+doc.text(doc.splitTextToSize(outputBox.value,180),10,10);
+doc.save("file.pdf");
+};
 
-XLSX.utils
-.book_append_sheet(
-wb,
-ws,
-"Scanned Data"
+/* EXCEL */
+excelBtn.onclick=()=>{
+const wb=XLSX.utils.book_new();
+const ws=XLSX.utils.aoa_to_sheet(
+outputBox.value.split("\n").map(r=>[r])
 );
-
-XLSX.writeFile(
-wb,
-"ScannedTable.xlsx"
-);
-
-}
-);
+XLSX.utils.book_append_sheet(wb,ws,"data");
+XLSX.writeFile(wb,"file.xlsx");
+};
 
 </script>
-
-<p style="
-text-align:center;
-color:#888;
-font-size:14px;
-margin-top:20px;
-font-weight:bold;
-">
-Powered by Kamran Akhtar
-</p>
 
 </body>
 </html>
