@@ -166,7 +166,6 @@ async function startCamera() {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
-    // Standard high-definition standard configuration
     const constraints = {
         video: {
             facingMode: useBackCamera ? { exact: "environment" } : "user",
@@ -183,7 +182,6 @@ async function startCamera() {
     } catch (error) {
         console.error("Exact mode failed, trying ideal mode...", error);
         
-        // Fallback 1: Agar exact access restricted ho, to ideal environment load karna
         try {
             const fallbackConstraints = {
                 video: {
@@ -197,7 +195,6 @@ async function startCamera() {
         } catch (fallbackError) {
             console.error("Ideal mode failed, loading basic configuration...", fallbackError);
             
-            // Fallback 2: Basic generic format setup
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 video.srcObject = currentStream;
@@ -213,10 +210,11 @@ async function startCamera() {
 switchCameraBtn.addEventListener("click", () => {
     useBackCamera = !useBackCamera;
     statusText.innerText = "⏳ Switching Camera Layout...";
-   
+    startCamera();
 });
 
 startCamera();
+
 
 // FAST SCANNING LOGIC
 captureBtn.addEventListener("click", async () => {
