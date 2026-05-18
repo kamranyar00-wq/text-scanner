@@ -156,37 +156,45 @@ function loadScript(src) {
     });
 }
 
-// ==========================
-// START CAMERA
-// ==========================
-
+// STABLE NATIVE ENVIRONMENT LOAD ENGINE
 async function startCamera() {
-
-    try {
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-            audio: false
-        });
-
-        video.srcObject = stream;
-
-        statusText.innerText = "✅ Camera Ready";
-
-    } catch (error) {
-
-        console.error(error);
-
-        statusText.innerText = "❌ Camera Access Denied";
-
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
     }
 
+    // Direct basic parameters to load main mobile lenses instantly
+    const constraints = {
+        video: {
+            facingMode: "environment"
+        },
+        audio: false
+    };
+
+  try {
+    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    video.srcObject = currentStream;
+      video.addEventListener("loadedmetadata", () => {
+    video.play();
+});
+
+    await video.play(); // ADD THIS
+
+    statusText.innerText = "✅ Back Camera Loaded Perfectly";
+} catch (error) {
+        console.error("Standard mode failed, running generic bypass...", error);
+        try {
+            // Ultimate native generic camera track connector
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            video.srcObject = currentStream;
+            statusText.innerText = "✅ Camera Active (Auto Sync Mode)";
+        } catch (finalError) {
+            statusText.innerText = "❌ Camera Blocked. Please Reset Browser Permissions.";
+        }
+    }
 }
 
+// Auto execution loop
 startCamera();
 
 // AI GRID SCANNING SYSTEM
@@ -196,8 +204,8 @@ captureBtn.addEventListener("click", async () => {
         outputBox.value = "";
         statusText.innerText = "⏳ Connecting Core Components...";
 
-        const cdnjs = "https://" + "://cloudflare.com";
-        const jsdelivr = "https://" + "cdn.jsdelivr.net/";
+        const cdnjs = "https://cdnjs.cloudflare.com/ajax/libs/";
+const jsdelivr = "https://cdn.jsdelivr.net/";
 
         if (typeof Tesseract === "undefined") {
             await loadScript(jsdelivr + "npm/tesseract.js@5.1.0/dist/tesseract.min.js");
@@ -216,6 +224,11 @@ captureBtn.addEventListener("click", async () => {
         }
 
         statusText.innerText = "⏳ Capturing Sharp Frame...";
+        if (video.videoWidth === 0) {
+    statusText.innerText = "❌ Camera not ready yet.";
+    captureBtn.disabled = false;
+    return;
+}
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
