@@ -174,7 +174,8 @@ async function startCamera() {
         };
         
         // Purane aur naye mobile browsers dono ke liye bypass switch
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
         video.srcObject = stream;
         statusText.innerText = "✅ Camera Ready";
     } catch (error) {
