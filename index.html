@@ -3,24 +3,57 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>OCR Pro MAX (Handwriting + Layout Fix)</title>
+<title>OCR Pro MAX Scanner</title>
 
 <!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- Excel with STYLES (borders support) -->
+<!-- Excel -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
 <style>
-body{font-family:Arial;background:#f5f7fb;padding:20px;text-align:center}
-.container{max-width:600px;margin:auto;background:#fff;padding:20px;border-radius:12px}
-video{width:100%;border-radius:10px}
-button{width:100%;padding:12px;margin-top:10px;font-weight:bold;border:none;border-radius:8px}
-#scan{background:#007bff;color:#fff}
-#txt{background:#28a745;color:#fff}
-#pdf{background:#ff9800;color:#fff}
-#excel{background:#6f42c1;color:#fff}
-textarea{width:100%;height:180px;margin-top:10px}
+body{
+    font-family:Arial;
+    background:#f4f6fb;
+    padding:20px;
+    text-align:center;
+}
+
+.container{
+    max-width:600px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+}
+
+video{
+    width:100%;
+    border-radius:10px;
+    background:black;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+#scan{background:#007bff;color:white;}
+#txt{background:#28a745;color:white;}
+#pdf{background:#ff9800;color:white;}
+#excel{background:#6f42c1;color:white;}
+
+textarea{
+    width:100%;
+    height:180px;
+    margin-top:10px;
+    padding:10px;
+}
 </style>
 </head>
 
@@ -28,7 +61,7 @@ textarea{width:100%;height:180px;margin-top:10px}
 
 <div class="container">
 
-<h2>📸 OCR PRO MAX (Handwriting Fix)</h2>
+<h2>📸 OCR Pro MAX (Fixed Version)</h2>
 
 <video id="video" autoplay playsinline></video>
 <canvas id="canvas" style="display:none;"></canvas>
@@ -37,11 +70,11 @@ textarea{width:100%;height:180px;margin-top:10px}
 
 <p id="status">Starting camera...</p>
 
-<textarea id="output"></textarea>
+<textarea id="output" placeholder="Scanned text will appear here..."></textarea>
 
-<button id="txt" disabled>TXT</button>
-<button id="pdf" disabled>PDF</button>
-<button id="excel" disabled>EXCEL (WITH BORDERS)</button>
+<button id="txt" disabled>📥 Download TXT</button>
+<button id="pdf" disabled>📄 Download PDF</button>
+<button id="excel" disabled>📊 Download Excel</button>
 
 </div>
 
@@ -73,20 +106,24 @@ status.innerText = "❌ Camera Error";
 startCamera();
 
 
-// ================= IMAGE PREPROCESS (IMPORTANT FOR HANDWRITING) =================
+// ================= IMAGE PREPROCESS (IMPORTANT FIX FOR MISSING WORDS) =================
 function preprocess(ctx, w, h){
 
 let img = ctx.getImageData(0,0,w,h);
 let d = img.data;
 
-// grayscale + contrast boost
 for(let i=0;i<d.length;i+=4){
-let avg = (d[i]+d[i+1]+d[i+2])/3;
 
-// contrast improvement
-avg = avg < 128 ? avg*0.8 : avg*1.2;
+// grayscale
+let gray = 0.3*d[i] + 0.59*d[i+1] + 0.11*d[i+2];
 
-d[i]=d[i+1]=d[i+2]=avg;
+// 🔥 IMPORTANT: better balance (not too harsh black/white)
+gray = gray > 130 ? 255 : gray * 0.6;
+
+// contrast boost
+gray = gray * 1.2;
+
+d[i]=d[i+1]=d[i+2]=gray;
 }
 
 ctx.putImageData(img,0,0);
@@ -97,15 +134,17 @@ ctx.putImageData(img,0,0);
 scanBtn.onclick = async () => {
 
 scanBtn.disabled = true;
-status.innerText = "⏳ Processing Image...";
+status.innerText = "⏳ Scanning...";
 
 const ctx = canvas.getContext("2d");
+
 canvas.width = video.videoWidth;
 canvas.height = video.videoHeight;
 
+// improve capture quality
+ctx.filter = "contrast(150%) brightness(120%)";
 ctx.drawImage(video,0,0);
 
-// 🔥 preprocessing for handwriting
 preprocess(ctx,canvas.width,canvas.height);
 
 const image = canvas.toDataURL("image/jpeg",0.9);
@@ -116,9 +155,11 @@ form.append("apikey","helloworld");
 
 // 🔥 BEST OCR SETTINGS
 form.append("OCREngine","2");
-form.append("detectOrientation","true");
 form.append("scale","true");
+form.append("detectOrientation","true");
+form.append("isOverlayRequired","true");
 form.append("isTable","true");
+form.append("filetype","jpg");
 
 try{
 
@@ -135,17 +176,17 @@ if(data.ParsedResults){
 
 let text = data.ParsedResults[0].ParsedText || "";
 
-// 🔥 layout cleaning (important)
+// 🔥 CLEAN TEXT (FIX MISSING SPACES / LINES)
 text = text
 .replace(/\r/g,"")
 .replace(/[ \t]+/g," ")
-.replace(/\n{3,}/g,"\n\n");
+.replace(/\n{3,}/g,"\n\n")
+.trim();
 
 output.value = text;
 
 status.innerText = "✅ Scan Complete";
 
-// enable buttons
 txtBtn.disabled = false;
 pdfBtn.disabled = false;
 excelBtn.disabled = false;
@@ -184,29 +225,15 @@ doc.save("scan.pdf");
 };
 
 
-// ================= EXCEL WITH BORDERS =================
+// ================= EXCEL =================
 excelBtn.onclick = () => {
 
 let rows = output.value.split("\n").map(r => [r]);
 
 let wb = XLSX.utils.book_new();
-
 let ws = XLSX.utils.aoa_to_sheet(rows);
 
-// 🔥 add borders
-for(let r in ws){
-if(typeof ws[r] === "object"){
-ws[r].s = {
-border:{
-top:{style:"thin"},
-bottom:{style:"thin"},
-left:{style:"thin"},
-right:{style:"thin"}
-}
-}
-}
-}
-
+// column width
 ws["!cols"] = [{wch:60}];
 
 XLSX.utils.book_append_sheet(wb,ws,"OCR");
