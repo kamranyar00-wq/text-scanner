@@ -120,7 +120,7 @@
 <div class="container">
     <h2>📸 Paper To Text & Excel Scanner</h2>
 
-    <video id="video" autoplay playsinline></video>
+    <video id="video" autoplay playsinline style="width:100%; max-height:400px; background:#000; border-radius:10px;"></video>
     <canvas id="canvas"></canvas>
 
     <button id="capture-btn">📷 Capture & Scan Text</button>
@@ -156,18 +156,16 @@ function loadScript(src) {
     });
 }
 
-// ONLY MAIN BACK CAMERA ENFORCER
+// STABLE NATIVE ENVIRONMENT LOAD ENGINE
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
-    // Force standard environment back camera constraints
+    // Direct basic parameters to load main mobile lenses instantly
     const constraints = {
         video: {
-            facingMode: { exact: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            facingMode: "environment"
         },
         audio: false
     };
@@ -175,31 +173,21 @@ async function startCamera() {
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
-        statusText.innerText = "✅ Main Back Camera Active";
+        statusText.innerText = "✅ Back Camera Loaded Perfectly";
     } catch (error) {
-        console.error("Exact back camera failed, running flexible environment mode...", error);
+        console.error("Standard mode failed, running generic bypass...", error);
         try {
-            // Backup ideal mode for back camera
-            currentStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" }, 
-                audio: false 
-            });
+            // Ultimate native generic camera track connector
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             video.srcObject = currentStream;
-            statusText.innerText = "✅ Back Camera Active (Auto Mode)";
-        } catch (fallbackError) {
-            console.error("All environment options failed, running generic mode...", fallbackError);
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                video.srcObject = currentStream;
-                statusText.innerText = "✅ Camera Active (Standard Mode)";
-            } catch (finalError) {
-                statusText.innerText = "❌ Camera Access Denied. Check Permissions.";
-            }
+            statusText.innerText = "✅ Camera Active (Auto Sync Mode)";
+        } catch (finalError) {
+            statusText.innerText = "❌ Camera Blocked. Please Reset Browser Permissions.";
         }
     }
 }
 
-// Auto execute on page open
+// Auto execution loop
 startCamera();
 
 // AI GRID SCANNING SYSTEM
