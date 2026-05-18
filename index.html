@@ -156,38 +156,37 @@ function loadScript(src) {
     });
 }
 
-// STABLE NATIVE ENVIRONMENT LOAD ENGINE
-async function startCamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
+// ==========================
+// START CAMERA
+// ==========================
 
-    // Direct basic parameters to load main mobile lenses instantly
-    const constraints = {
-        video: {
-            facingMode: "environment"
-        },
-        audio: false
-    };
+async function startCamera() {
 
     try {
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = currentStream;
-        statusText.innerText = "✅ Back Camera Loaded Perfectly";
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        statusText.innerText = "✅ Camera Ready";
+
     } catch (error) {
-        console.error("Standard mode failed, running generic bypass...", error);
-        try {
-            // Ultimate native generic camera track connector
-            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            video.srcObject = currentStream;
-            statusText.innerText = "✅ Camera Active (Auto Sync Mode)";
-        } catch (finalError) {
-            statusText.innerText = "❌ Camera Blocked. Please Reset Browser Permissions.";
-        }
+
+        console.error(error);
+
+        statusText.innerText = "❌ Camera Access Denied";
+
     }
+
 }
 
-// Auto execution loop
 startCamera();
 
 // AI GRID SCANNING SYSTEM
