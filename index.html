@@ -3,18 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>OCR Scanner Pro (Urdu + English)</title>
+<title>OCR Scanner Pro (Fixed)</title>
 
-<!-- PDF + EXCEL -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- LIBRARIES -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
 
 body{
 font-family:Arial;
@@ -76,7 +73,7 @@ color:#ff5722;
 
 <div class="container">
 
-<h2>📸 OCR Scanner Pro (Urdu + English)</h2>
+<h2>📸 OCR Scanner Pro</h2>
 
 <video id="video" autoplay playsinline muted></video>
 <canvas id="canvas" style="display:none;"></canvas>
@@ -112,59 +109,47 @@ async function startCamera(){
 
 try{
 
+statusText.innerText = "⏳ Starting Camera...";
+
 stream = await navigator.mediaDevices.getUserMedia({
-video:{
-facingMode:"environment"
-},
+video:{facingMode:"environment"},
 audio:false
 });
 
 video.srcObject = stream;
 
-/* FIX FOR ANDROID + GITHUB PAGES */
 video.setAttribute("playsinline", true);
 video.setAttribute("webkit-playsinline", true);
 video.muted = true;
+video.autoplay = true;
 
 await video.play();
 
 statusText.innerText = "✅ Camera Ready";
 
-}catch(error){
-
-console.error(error);
+}catch(e){
+console.error(e);
 statusText.innerText = "❌ Camera Blocked";
-
 }
 
 }
 
-window.addEventListener("load",()=>{
-setTimeout(startCamera,500);
-});
-
-/* ---------------- LOAD SCRIPT ---------------- */
-function loadScript(src){
-return new Promise((resolve)=>{
-const s=document.createElement("script");
-s.src=src;
-s.onload=()=>resolve(true);
-document.head.appendChild(s);
-});
-}
+window.addEventListener("load", startCamera);
 
 /* ---------------- OCR ---------------- */
-captureBtn.addEventListener("click",async ()=>{
+captureBtn.addEventListener("click", async ()=>{
 
 captureBtn.disabled = true;
 outputBox.value = "";
 statusText.innerText = "⏳ Loading OCR...";
 
 if(typeof Tesseract === "undefined"){
-await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js");
+statusText.innerText = "❌ OCR Library Missing";
+captureBtn.disabled = false;
+return;
 }
 
-/* CAMERA READY CHECK (SAFE) */
+/* CAMERA CHECK */
 if(!video.videoWidth || !video.videoHeight){
 statusText.innerText = "❌ Camera Not Ready";
 captureBtn.disabled = false;
@@ -185,7 +170,7 @@ const result = await Tesseract.recognize(
 imageData,
 "eng+urd",
 {
-logger:(m)=>{
+logger:m=>{
 if(m.status==="recognizing text"){
 statusText.innerText = `⚡ ${Math.floor(m.progress*100)}%`;
 }
@@ -203,7 +188,7 @@ return;
 }
 
 outputBox.value = text;
-statusText.innerText = "✅ Scan Successful";
+statusText.innerText = "✅ Scan Complete";
 
 txtBtn.disabled = false;
 pdfBtn.disabled = false;
@@ -240,8 +225,8 @@ XLSX.writeFile(wb,"file.xlsx");
 
 </script>
 
-
-<p style="text-align:center; color:#888; font-size:14px; margin-top:20px; font-weight:bold;">
+<!-- FOOTER -->
+<p style="text-align:center;color:#888;font-size:14px;margin-top:20px;font-weight:bold;">
 Powered by Kamran Akhtar
 </p>
 
