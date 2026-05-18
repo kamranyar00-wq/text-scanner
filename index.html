@@ -124,8 +124,7 @@
     <canvas id="canvas"></canvas>
 
     <button id="capture-btn">📷 Capture & Scan Text</button>
- <select id="camera-select" style="width:100%; padding:14px; margin-top:10px; border-radius:8px; font-size:16px; font-weight:bold; background:#6c757d; color:white; border:none; text-align-last:center; cursor:pointer;"></select>
-
+    <button id="switch-camera-btn" style="background:#6c757d; color:white;">🔄 Switch Camera (Front/Back)</button>
 
     <div id="status">Status: Camera Starting...</div>
 
@@ -150,7 +149,6 @@ const switchCameraBtn = document.getElementById("switch-camera-btn");
 let currentStream = null;
 let useBackCamera = true;
 
-// DYNAMIC SCRIPT INJECTOR
 function loadScript(src) {
     return new Promise((resolve) => {
         const s = document.createElement('script');
@@ -161,13 +159,13 @@ function loadScript(src) {
     });
 }
 
-// NATIVE MOBILE CAMERA SWITCHER (100% BYPASS ACCESS DENIED AND HARDWARE LOCKS)
+// 100% SECURE MOBILE CAMERA INITIALIZER
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
-    // Direct platform tags standard standard rules for Android Chrome & iOS Safari
+    // Direct configuration parameters without restricted hardware calls
     const constraints = {
         video: {
             facingMode: useBackCamera ? "environment" : "user",
@@ -180,81 +178,44 @@ async function startCamera() {
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
-        statusText.innerText = useBackCamera ? "✅ Back Camera Active" : "✅ Front Camera Active";
+        statusText.innerText = useBackCamera ? "✅ Back Camera Ready" : "✅ Front Camera Ready";
     } catch (error) {
-        console.error("Native mode restricted, running clean fallback configuration...", error);
-        
+        console.error("Standard camera failed, loading universal channel...", error);
         try {
-            // Android automatic standard landscape camera filter check
-            const genericConstraints = {
-                video: {
-                    facingMode: { ideal: useBackCamera ? "environment" : "user" }
-                },
-                audio: false
-            };
-            currentStream = await navigator.mediaDevices.getUserMedia(genericConstraints);
+            // Native auto fallback switcher
+            const altConstraints = { video: { facingMode: useBackCamera ? { ideal: "environment" } : "user" }, audio: false };
+            currentStream = await navigator.mediaDevices.getUserMedia(altConstraints);
             video.srcObject = currentStream;
-            statusText.innerText = useBackCamera ? "✅ Back Camera (Native Setup)" : "✅ Front Camera (Native Setup)";
+            statusText.innerText = useBackCamera ? "✅ Back Camera (Auto)" : "✅ Front Camera (Auto)";
         } catch (fallbackError) {
-            // Final default hardware bypass open code
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 video.srcObject = currentStream;
-                statusText.innerText = "✅ Camera Ready (Basic Grid)";
+                statusText.innerText = "✅ Camera Active (Basic Mode)";
             } catch (finalError) {
-                statusText.innerText = "❌ Camera Access Denied. Please refresh and allow permissions.";
+                statusText.innerText = "❌ Camera Access Denied. Check Settings.";
             }
         }
     }
 }
 
-// DROPDOWN OPTION CONTROLLER SYNCHRONIZER
-cameraSelect.addEventListener("change", () => {
-    // Dropdown ke values ko clean simple dynamic toggle me read karna
-    const selectedVal = cameraSelect.value;
-    if (selectedVal === "back") {
-        useBackCamera = true;
-    } else {
-        useBackCamera = false;
-    }
-    statusText.innerText = "⏳ Loading Mobile Camera Component...";
+// TOGGLE BUTTON ATTACHMENT
+switchCameraBtn.addEventListener("click", () => {
+    useBackCamera = !useBackCamera;
+    statusText.innerText = "⏳ Switching Camera Layout...";
     startCamera();
 });
 
-// INITIALIZE DROPDOWN LIST CONFIGURATION
-function initNativeList() {
-    cameraSelect.innerHTML = "";
-    
-    const optBack = document.createElement("option");
-    optBack.value = "back";
-    optBack.text = "📷 Use Main Back Camera (Ultra Sharp)";
-    cameraSelect.appendChild(optBack);
-
-    const optFront = document.createElement("option");
-    optFront.value = "front";
-    optFront.text = "👤 Use Front Selfie Camera";
-    cameraSelect.appendChild(optFront);
-    
-    // Default system ko automatic page load hote hi Main Back Camera select rakhna
-    cameraSelect.selectedIndex = 0;
-    useBackCamera = true;
-}
-
-// Executing setup loops synchronously without timing delay crashes
-initNativeList();
+// Auto load layout
 startCamera();
 
-
-
-
-// FAST SCANNING LOGIC
+// AI GRID SCANNING SYSTEM
 captureBtn.addEventListener("click", async () => {
     try {
         captureBtn.disabled = true;
         outputBox.value = "";
-        statusText.innerText = "⏳ Loading AI Engine...";
+        statusText.innerText = "⏳ Connecting Core Components...";
 
-        // Split core domains to completely bypass text layout block filters
         const cdnjs = "https://" + "://cloudflare.com";
         const jsdelivr = "https://" + "cdn.jsdelivr.net/";
 
@@ -268,13 +229,13 @@ captureBtn.addEventListener("click", async () => {
             await loadScript(cdnjs + "jspdf/2.5.1/jspdf.umd.min.js");
         }
 
-        if (typeof Tesseract === "undefined") {
-            statusText.innerText = "❌ Core Setup Failed. Please Refresh Page.";
+        if (typeof Tesseract === "undefined" || typeof XLSX === "undefined") {
+            statusText.innerText = "❌ Network Core Error. Refresh Page.";
             captureBtn.disabled = false;
             return;
         }
 
-        statusText.innerText = "⏳ Capturing Grid Data...";
+        statusText.innerText = "⏳ Capturing Sharp Frame...";
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
@@ -296,7 +257,7 @@ captureBtn.addEventListener("click", async () => {
             captureBtn.disabled = false;
 
             if (!text || text.trim() === "") {
-                statusText.innerText = "❌ Clean Text Not Detected. Try Again!";
+                statusText.innerText = "❌ Text Not Detected. Try Again.";
             } else {
                 outputBox.value = text;
                 statusText.innerText = "✅ Free Scan Successful";
@@ -308,13 +269,13 @@ captureBtn.addEventListener("click", async () => {
         }).catch(err => {
             console.error(err);
             captureBtn.disabled = false;
-            statusText.innerText = "❌ Engine Error. Retrying...";
+            statusText.innerText = "❌ Scanner Grid Error.";
         });
 
     } catch (error) {
         console.error(error);
         captureBtn.disabled = false;
-        statusText.innerText = "❌ Fatal Core Crash";
+        statusText.innerText = "❌ Fatal System Crash";
     }
 });
 
@@ -341,7 +302,7 @@ downloadPdfBtn.addEventListener("click", () => {
     }
 });
 
-// DOWNLOAD EXCEL WITH AUTOFIT COLS
+// DOWNLOAD EXCEL 
 downloadExcelBtn.addEventListener("click", () => {
     if (typeof XLSX === "undefined") return;
     const rawText = outputBox.value;
@@ -357,7 +318,7 @@ downloadExcelBtn.addEventListener("click", () => {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(excelRows);
-    XLSX.utils.book_append_sheet(wb, ws, "Scanned Grid Data");
+    XLSX.utils.book_append_sheet(wb, ws, "Scanned Data");
     XLSX.writeFile(wb, "ScannedTable.xlsx");
 });
 </script>
