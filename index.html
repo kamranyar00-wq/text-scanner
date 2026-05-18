@@ -3,69 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>OCR Scanner Pro (Fixed)</title>
+<title>OCR Pro MAX (Handwriting + Layout Fix)</title>
 
-<!-- LIBRARIES -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<!-- Excel with STYLES (borders support) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-
-body{
-font-family:Arial;
-background:#f4f7f6;
-padding:20px;
-text-align:center;
-}
-
-.container{
-max-width:550px;
-margin:auto;
-background:#fff;
-padding:20px;
-border-radius:12px;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-
-video{
-width:100%;
-height:300px;
-background:black;
-border-radius:10px;
-object-fit:cover;
-margin-bottom:15px;
-}
-
-button{
-width:100%;
-padding:14px;
-margin-top:10px;
-border:none;
-border-radius:8px;
-font-weight:bold;
-cursor:pointer;
-}
-
-#capture-btn{background:#007bff;color:white;}
-.download-btn{background:#28a745;color:white;}
-#download-excel{background:#ff9800;color:white;}
-
-textarea{
-width:100%;
-height:180px;
-margin-top:15px;
-padding:10px;
-border-radius:8px;
-border:1px solid #ccc;
-}
-
-#status{
-margin-top:10px;
-font-weight:bold;
-color:#ff5722;
-}
+body{font-family:Arial;background:#f5f7fb;padding:20px;text-align:center}
+.container{max-width:600px;margin:auto;background:#fff;padding:20px;border-radius:12px}
+video{width:100%;border-radius:10px}
+button{width:100%;padding:12px;margin-top:10px;font-weight:bold;border:none;border-radius:8px}
+#scan{background:#007bff;color:#fff}
+#txt{background:#28a745;color:#fff}
+#pdf{background:#ff9800;color:#fff}
+#excel{background:#6f42c1;color:#fff}
+textarea{width:100%;height:180px;margin-top:10px}
 </style>
 </head>
 
@@ -73,20 +28,20 @@ color:#ff5722;
 
 <div class="container">
 
-<h2>📸 OCR Scanner Pro</h2>
+<h2>📸 OCR PRO MAX (Handwriting Fix)</h2>
 
-<video id="video" autoplay playsinline muted></video>
+<video id="video" autoplay playsinline></video>
 <canvas id="canvas" style="display:none;"></canvas>
 
-<button id="capture-btn">📷 Capture & Scan</button>
+<button id="scan">📷 Scan Document</button>
 
-<div id="status">Starting Camera...</div>
+<p id="status">Starting camera...</p>
 
-<textarea id="output-box" placeholder="Scanned text..."></textarea>
+<textarea id="output"></textarea>
 
-<button id="download-txt" class="download-btn" disabled>📥 TXT</button>
-<button id="download-pdf" class="download-btn" disabled>📄 PDF</button>
-<button id="download-excel" class="download-btn" disabled>📊 EXCEL</button>
+<button id="txt" disabled>TXT</button>
+<button id="pdf" disabled>PDF</button>
+<button id="excel" disabled>EXCEL (WITH BORDERS)</button>
 
 </div>
 
@@ -94,141 +49,172 @@ color:#ff5722;
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
-const captureBtn = document.getElementById("capture-btn");
-const outputBox = document.getElementById("output-box");
-const statusText = document.getElementById("status");
+const output = document.getElementById("output");
+const status = document.getElementById("status");
 
-const txtBtn = document.getElementById("download-txt");
-const pdfBtn = document.getElementById("download-pdf");
-const excelBtn = document.getElementById("download-excel");
+const scanBtn = document.getElementById("scan");
+const txtBtn = document.getElementById("txt");
+const pdfBtn = document.getElementById("pdf");
+const excelBtn = document.getElementById("excel");
 
-let stream = null;
 
-/* ---------------- CAMERA ---------------- */
+// ================= CAMERA =================
 async function startCamera(){
-
 try{
-
-statusText.innerText = "⏳ Starting Camera...";
-
-stream = await navigator.mediaDevices.getUserMedia({
-video:{facingMode:"environment"},
-audio:false
+const stream = await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"environment"}
 });
-
 video.srcObject = stream;
-
-video.setAttribute("playsinline", true);
-video.setAttribute("webkit-playsinline", true);
-video.muted = true;
-video.autoplay = true;
-
-await video.play();
-
-statusText.innerText = "✅ Camera Ready";
-
+status.innerText = "✅ Camera Ready";
 }catch(e){
-console.error(e);
-statusText.innerText = "❌ Camera Blocked";
+status.innerText = "❌ Camera Error";
+}
+}
+startCamera();
+
+
+// ================= IMAGE PREPROCESS (IMPORTANT FOR HANDWRITING) =================
+function preprocess(ctx, w, h){
+
+let img = ctx.getImageData(0,0,w,h);
+let d = img.data;
+
+// grayscale + contrast boost
+for(let i=0;i<d.length;i+=4){
+let avg = (d[i]+d[i+1]+d[i+2])/3;
+
+// contrast improvement
+avg = avg < 128 ? avg*0.8 : avg*1.2;
+
+d[i]=d[i+1]=d[i+2]=avg;
 }
 
+ctx.putImageData(img,0,0);
 }
 
-window.addEventListener("load", startCamera);
 
-/* ---------------- OCR ---------------- */
-captureBtn.addEventListener("click", async ()=>{
+// ================= SCAN =================
+scanBtn.onclick = async () => {
 
-captureBtn.disabled = true;
-outputBox.value = "";
-statusText.innerText = "⏳ Loading OCR...";
+scanBtn.disabled = true;
+status.innerText = "⏳ Processing Image...";
 
-if(typeof Tesseract === "undefined"){
-statusText.innerText = "❌ OCR Library Missing";
-captureBtn.disabled = false;
-return;
-}
-
-/* CAMERA CHECK */
-if(!video.videoWidth || !video.videoHeight){
-statusText.innerText = "❌ Camera Not Ready";
-captureBtn.disabled = false;
-return;
-}
-
-/* CAPTURE */
+const ctx = canvas.getContext("2d");
 canvas.width = video.videoWidth;
 canvas.height = video.videoHeight;
 
-const ctx = canvas.getContext("2d");
 ctx.drawImage(video,0,0);
 
-const imageData = canvas.toDataURL("image/jpeg",0.8);
+// 🔥 preprocessing for handwriting
+preprocess(ctx,canvas.width,canvas.height);
 
-/* OCR */
-const result = await Tesseract.recognize(
-imageData,
-"eng+urd",
-{
-logger:m=>{
-if(m.status==="recognizing text"){
-statusText.innerText = `⚡ ${Math.floor(m.progress*100)}%`;
-}
-}
-}
-);
+const image = canvas.toDataURL("image/jpeg",0.9);
 
-const text = result.data.text;
+const form = new FormData();
+form.append("base64Image",image);
+form.append("apikey","helloworld");
 
-captureBtn.disabled = false;
+// 🔥 BEST OCR SETTINGS
+form.append("OCREngine","2");
+form.append("detectOrientation","true");
+form.append("scale","true");
+form.append("isTable","true");
 
-if(!text.trim()){
-statusText.innerText = "❌ No Text Found";
-return;
-}
+try{
 
-outputBox.value = text;
-statusText.innerText = "✅ Scan Complete";
+const res = await fetch("https://api.ocr.space/parse/image",{
+method:"POST",
+body:form
+});
 
+const data = await res.json();
+
+scanBtn.disabled = false;
+
+if(data.ParsedResults){
+
+let text = data.ParsedResults[0].ParsedText || "";
+
+// 🔥 layout cleaning (important)
+text = text
+.replace(/\r/g,"")
+.replace(/[ \t]+/g," ")
+.replace(/\n{3,}/g,"\n\n");
+
+output.value = text;
+
+status.innerText = "✅ Scan Complete";
+
+// enable buttons
 txtBtn.disabled = false;
 pdfBtn.disabled = false;
 excelBtn.disabled = false;
 
-});
+}else{
+status.innerText = "❌ No Text Found";
+}
 
-/* ---------------- TXT ---------------- */
-txtBtn.onclick=()=>{
-const b=new Blob([outputBox.value],{type:"text/plain"});
-const a=document.createElement("a");
-a.href=URL.createObjectURL(b);
-a.download="text.txt";
+}catch(e){
+scanBtn.disabled = false;
+status.innerText = "❌ Server Error";
+}
+
+};
+
+
+// ================= TXT =================
+txtBtn.onclick = () => {
+const blob = new Blob([output.value],{type:"text/plain"});
+const a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "scan.txt";
 a.click();
 };
 
-/* ---------------- PDF ---------------- */
-pdfBtn.onclick=()=>{
-const {jsPDF}=window.jspdf;
-const doc=new jsPDF();
-doc.text(doc.splitTextToSize(outputBox.value,180),10,10);
-doc.save("file.pdf");
+
+// ================= PDF =================
+pdfBtn.onclick = () => {
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+const lines = doc.splitTextToSize(output.value,180);
+doc.text(lines,10,10);
+
+doc.save("scan.pdf");
 };
 
-/* ---------------- EXCEL ---------------- */
-excelBtn.onclick=()=>{
-const wb=XLSX.utils.book_new();
-const ws=XLSX.utils.aoa_to_sheet(
-outputBox.value.split("\n").map(r=>[r])
-);
-XLSX.utils.book_append_sheet(wb,ws,"data");
-XLSX.writeFile(wb,"file.xlsx");
+
+// ================= EXCEL WITH BORDERS =================
+excelBtn.onclick = () => {
+
+let rows = output.value.split("\n").map(r => [r]);
+
+let wb = XLSX.utils.book_new();
+
+let ws = XLSX.utils.aoa_to_sheet(rows);
+
+// 🔥 add borders
+for(let r in ws){
+if(typeof ws[r] === "object"){
+ws[r].s = {
+border:{
+top:{style:"thin"},
+bottom:{style:"thin"},
+left:{style:"thin"},
+right:{style:"thin"}
+}
+}
+}
+}
+
+ws["!cols"] = [{wch:60}];
+
+XLSX.utils.book_append_sheet(wb,ws,"OCR");
+
+XLSX.writeFile(wb,"scan.xlsx");
 };
 
 </script>
-
-<!-- FOOTER -->
-<p style="text-align:center;color:#888;font-size:14px;margin-top:20px;font-weight:bold;">
-Powered by Kamran Akhtar
-</p>
 
 </body>
 </html>
