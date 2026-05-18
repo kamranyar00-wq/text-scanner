@@ -124,7 +124,6 @@
     <canvas id="canvas"></canvas>
 
     <button id="capture-btn">📷 Capture & Scan Text</button>
-    <button id="switch-camera-btn" style="background:#6c757d; color:white;">🔄 Switch Camera (Front/Back)</button>
 
     <div id="status">Status: Camera Starting...</div>
 
@@ -144,10 +143,8 @@ const statusText = document.getElementById("status");
 const downloadTxtBtn = document.getElementById("download-txt");
 const downloadPdfBtn = document.getElementById("download-pdf");
 const downloadExcelBtn = document.getElementById("download-excel");
-const switchCameraBtn = document.getElementById("switch-camera-btn");
 
 let currentStream = null;
-let useBackCamera = true;
 
 function loadScript(src) {
     return new Promise((resolve) => {
@@ -159,18 +156,18 @@ function loadScript(src) {
     });
 }
 
-// 100% SECURE MOBILE CAMERA INITIALIZER
+// ONLY MAIN BACK CAMERA ENFORCER
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
-    // Direct configuration parameters without restricted hardware calls
+    // Force standard environment back camera constraints
     const constraints = {
         video: {
-            facingMode: useBackCamera ? "environment" : "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            facingMode: { exact: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
         },
         audio: false
     };
@@ -178,35 +175,31 @@ async function startCamera() {
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
-        statusText.innerText = useBackCamera ? "✅ Back Camera Ready" : "✅ Front Camera Ready";
+        statusText.innerText = "✅ Main Back Camera Active";
     } catch (error) {
-        console.error("Standard camera failed, loading universal channel...", error);
+        console.error("Exact back camera failed, running flexible environment mode...", error);
         try {
-            // Native auto fallback switcher
-            const altConstraints = { video: { facingMode: useBackCamera ? { ideal: "environment" } : "user" }, audio: false };
-            currentStream = await navigator.mediaDevices.getUserMedia(altConstraints);
+            // Backup ideal mode for back camera
+            currentStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" }, 
+                audio: false 
+            });
             video.srcObject = currentStream;
-            statusText.innerText = useBackCamera ? "✅ Back Camera (Auto)" : "✅ Front Camera (Auto)";
+            statusText.innerText = "✅ Back Camera Active (Auto Mode)";
         } catch (fallbackError) {
+            console.error("All environment options failed, running generic mode...", fallbackError);
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 video.srcObject = currentStream;
-                statusText.innerText = "✅ Camera Active (Basic Mode)";
+                statusText.innerText = "✅ Camera Active (Standard Mode)";
             } catch (finalError) {
-                statusText.innerText = "❌ Camera Access Denied. Check Settings.";
+                statusText.innerText = "❌ Camera Access Denied. Check Permissions.";
             }
         }
     }
 }
 
-// TOGGLE BUTTON ATTACHMENT
-switchCameraBtn.addEventListener("click", () => {
-    useBackCamera = !useBackCamera;
-    statusText.innerText = "⏳ Switching Camera Layout...";
-    startCamera();
-});
-
-// Auto load layout
+// Auto execute on page open
 startCamera();
 
 // AI GRID SCANNING SYSTEM
