@@ -3,55 +3,52 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Document Scanner Pro (Exact Copy)</title>
+<title>OCR Scanner Pro MAX</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 body{
     font-family:Arial;
-    background:#f5f6fb;
+    background:#f4f6fb;
     padding:20px;
     text-align:center;
 }
 
 .container{
-    max-width:600px;
+    max-width:650px;
     margin:auto;
     background:#fff;
     padding:20px;
     border-radius:12px;
 }
 
-video{
+video, img{
     width:100%;
     border-radius:10px;
-    background:black;
+    margin-top:10px;
 }
 
-button{
+button, input{
     width:100%;
     padding:12px;
     margin-top:10px;
     border:none;
     border-radius:8px;
     font-weight:bold;
-    cursor:pointer;
 }
 
-#scan{background:#007bff;color:white;}
-#pdf{background:#ff9800;color:white;}
+#scan{background:#007bff;color:#fff}
+#upload{background:#17a2b8;color:#fff}
+#pdf{background:#ff9800;color:#fff}
+#excel{background:#6f42c1;color:#fff}
+#txt{background:#28a745;color:#fff}
 
-#status{
-    margin-top:10px;
-    font-weight:bold;
-}
-
-img{
+textarea{
     width:100%;
+    height:160px;
     margin-top:10px;
-    border:1px solid #ccc;
-    border-radius:8px;
 }
 </style>
 </head>
@@ -60,18 +57,27 @@ img{
 
 <div class="container">
 
-<h2>📄 Document Scanner Pro (Exact Copy)</h2>
+<h2>📄 OCR Scanner PRO MAX (Final)</h2>
 
 <video id="video" autoplay playsinline></video>
 <canvas id="canvas" style="display:none;"></canvas>
 
-<button id="scan">📷 Scan Document</button>
-
-<p id="status">Camera starting...</p>
+<button id="scan">📷 Scan from Camera</button>
+<input type="file" id="upload" accept="image/*">
 
 <img id="preview"/>
 
-<button id="pdf">📄 Download EXACT PDF</button>
+<p id="status">Ready</p>
+
+<textarea id="text"></textarea>
+
+<button id="txt">📥 Download TEXT</button>
+<button id="pdf">📄 Download PDF (HD)</button>
+<button id="excel">📊 Download EXCEL</button>
+
+<p style="margin-top:10px;font-weight:bold;color:gray;">
+Powered by Kamran Akhtar
+</p>
 
 </div>
 
@@ -80,56 +86,129 @@ img{
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const preview = document.getElementById("preview");
+const textBox = document.getElementById("text");
 const status = document.getElementById("status");
 
-let lastImage = null;
+let lastImage = "";
 
 // ================= CAMERA =================
-async function startCamera(){
-const stream = await navigator.mediaDevices.getUserMedia({
-video:{facingMode:"environment"}
-});
+navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+.then(stream=>{
 video.srcObject = stream;
-status.innerText = "✅ Camera Ready";
-}
-startCamera();
+});
 
-
-// ================= SCAN FULL PAGE =================
-document.getElementById("scan").onclick = () => {
-
+// ================= HD CAPTURE FIX (NO BLUR) =================
+function captureHD(source){
 const ctx = canvas.getContext("2d");
 
-canvas.width = video.videoWidth;
-canvas.height = video.videoHeight;
+canvas.width = source.videoWidth || source.width;
+canvas.height = source.videoHeight || source.height;
 
-ctx.drawImage(video,0,0);
+// 🔥 HD quality boost
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = "high";
 
-lastImage = canvas.toDataURL("image/jpeg",1.0);
+ctx.drawImage(source,0,0,canvas.width,canvas.height);
 
+return canvas.toDataURL("image/jpeg",1.0);
+}
+
+// ================= OCR FUNCTION =================
+async function runOCR(image){
+
+const form = new FormData();
+form.append("base64Image", image);
+form.append("apikey","helloworld");
+form.append("OCREngine","2");
+form.append("scale","true");
+form.append("detectOrientation","true");
+
+const res = await fetch("https://api.ocr.space/parse/image",{method:"POST",body:form});
+const data = await res.json();
+
+return data.ParsedResults ? data.ParsedResults[0].ParsedText : "";
+}
+
+// ================= SCAN FROM CAMERA =================
+document.getElementById("scan").onclick = async ()=>{
+
+status.innerText = "Scanning...";
+
+lastImage = captureHD(video);
 preview.src = lastImage;
 
-status.innerText = "✅ Document Captured (Exact Copy)";
+let result = await runOCR(lastImage);
+
+textBox.value = result;
+
+status.innerText = "Done";
 };
 
+// ================= UPLOAD FROM GALLERY =================
+document.getElementById("upload").onchange = async (e)=>{
 
-// ================= PDF (REAL SCANNER STYLE) =================
-document.getElementById("pdf").onclick = () => {
+let file = e.target.files[0];
 
-if(!lastImage) return;
+let reader = new FileReader();
 
-const { jsPDF } = window.jspdf;
+reader.onload = async function(event){
 
+let img = new Image();
+img.src = event.target.result;
+
+img.onload = async ()=>{
+
+lastImage = captureHD(img);
+preview.src = lastImage;
+
+let result = await runOCR(lastImage);
+textBox.value = result;
+
+status.innerText = "Done (Uploaded Image)";
+};
+
+};
+
+reader.readAsDataURL(file);
+};
+
+// ================= TXT =================
+document.getElementById("txt").onclick = ()=>{
+
+let blob = new Blob([textBox.value],{type:"text/plain"});
+let a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "text.txt";
+a.click();
+};
+
+// ================= PDF (HD + NO BLUR + FOOTER) =================
+document.getElementById("pdf").onclick = ()=>{
+
+const {jsPDF} = window.jspdf;
 const doc = new jsPDF("p","mm","a4");
 
-// full page image (no text conversion)
 doc.addImage(lastImage,"JPEG",0,0,210,297);
 
-// 🔥 FOOTER ADDED (your requirement)
+// footer
 doc.setFontSize(10);
-doc.text("Powered by Kamran Akhtar", 70, 290);
+doc.text("Powered by Kamran Akhtar",70,290);
 
-doc.save("scanned_document.pdf");
+doc.save("scan.pdf");
+};
+
+// ================= EXCEL =================
+document.getElementById("excel").onclick = ()=>{
+
+let rows = textBox.value.split("\n").map(r=>[r]);
+
+let wb = XLSX.utils.book_new();
+let ws = XLSX.utils.aoa_to_sheet(rows);
+
+ws["!cols"] = [{wch:60}];
+
+XLSX.utils.book_append_sheet(wb,ws,"OCR");
+XLSX.writeFile(wb,"scan.xlsx");
 };
 
 </script>
