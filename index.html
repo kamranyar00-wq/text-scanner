@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Super Fast Free OCR & Excel Scanner</title>
 
-    <!-- FIXED CORE LIBRARIES -->
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
-    <script src="https://jsdelivr.net"></script>
-
     <style>
         *{
             margin:0;
@@ -25,8 +20,7 @@
         }
 
         .container{
-
-                    max-width:550px;
+            max-width:550px;
             margin:auto;
             background:white;
             padding:20px;
@@ -66,9 +60,6 @@
         #capture-btn:hover{
             background:#0056b3;
         }
-                #capture-btn:hover{
-            background:#0056b3;
-        }
 
         .download-btn{
             background:#28a745;
@@ -86,6 +77,15 @@
 
         #download-excel:hover {
             background:#e68a00;
+        }
+
+        #switch-camera-btn {
+            background:#6c757d;
+            color:white;
+        }
+
+        #switch-camera-btn:hover {
+            background:#5a6268;
         }
 
         button:disabled{
@@ -121,50 +121,18 @@
     <h2>📸 Paper To Text & Excel Scanner</h2>
 
     <video id="video" autoplay playsinline></video>
-
     <canvas id="canvas"></canvas>
 
-    <button id="capture-btn">
-        📷 Capture & Scan Text
-    </button>
+    <button id="capture-btn">📷 Capture & Scan Text</button>
+    <button id="switch-camera-btn">🔄 Switch Camera (Front/Back)</button>
 
-    <div id="status">
-        Status: Camera Starting...
-    </div>
+    <div id="status">Status: Camera Starting...</div>
 
-    <textarea 
-        id="output-box" 
-        placeholder="Scanned text will appear here..."
-    ></textarea>
+    <textarea id="output-box" placeholder="Scanned text will appear here..."></textarea>
 
-    <button id="download-txt" class="download-btn" disabled>
-        📥 Download TXT
-    </button>
-
-    <button id="download-pdf" class="download-btn" disabled>
-        📄 Download PDF
-    </button>
-
-    <button id="download-excel" class="download-btn" disabled>
-        📊 Download EXCEL (.xlsx)
-    </button>
-
-</div>
-
-<script>
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const captureBtn = document.getElementById("capture-btn");
-const outputBox = document.getElementById("output-box");
-const statusText = document.getElementById("status");
-const downloadTxtBtn = document.getElementById("download-txt");
-const downloadPdfBtn = document.getElementById("download-pdf");
-const downloadExcelBtn = document.getElementById("download-excel");
-
-    <!-- New Switch Camera Button Included in Design Layout -->
-    <button id="switch-camera-btn" style="background:#6c757d; color:white;">
-        🔄 Switch Camera (Front/Back)
-    </button>
+    <button id="download-txt" class="download-btn" disabled>📥 Download TXT</button>
+    <button id="download-pdf" class="download-btn" disabled>📄 Download PDF</button>
+    <button id="download-excel" class="download-btn" disabled>📊 Download EXCEL (.xlsx)</button>
 </div>
 
 <script>
@@ -179,9 +147,20 @@ const downloadExcelBtn = document.getElementById("download-excel");
 const switchCameraBtn = document.getElementById("switch-camera-btn");
 
 let currentStream = null;
-let useBackCamera = true; // Default back camera
+let useBackCamera = true;
 
-// UNIVERSAL CAMERA CONTROLLER WITH AUTO FALLBACKS
+// DYNAMIC SCRIPT INJECTOR
+function loadScript(src) {
+    return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+    });
+}
+
+// STABLE MOBILE CAMERA CONTROLLER
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -203,7 +182,6 @@ async function startCamera() {
     } catch (error) {
         console.error(error);
         try {
-            // Basic fallback switch
             currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             video.srcObject = currentStream;
             statusText.innerText = "✅ Camera Ready (Basic Mode)";
@@ -213,7 +191,7 @@ async function startCamera() {
     }
 }
 
-// SWITCH CAMERA EVENT
+// TOGGLE SWITCH EVENT
 switchCameraBtn.addEventListener("click", () => {
     useBackCamera = !useBackCamera;
     statusText.innerText = "⏳ Switching Camera...";
@@ -222,55 +200,42 @@ switchCameraBtn.addEventListener("click", () => {
 
 startCamera();
 
-// FAST IMMUTABLE LOADER FOR CORE LIBRARIES
-function loadScript(src) {
-    return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.head.appendChild(script);
-    });
-}
-
-// CAPTURE & SUPER FAST AI SCANNING
+// FAST SCANNING LOGIC
 captureBtn.addEventListener("click", async () => {
     try {
         captureBtn.disabled = true;
         outputBox.value = "";
-        statusText.innerText = "⏳ Connecting Super Fast AI Core...";
+        statusText.innerText = "⏳ Loading AI Engine...";
 
-        // Split core components to load asynchronously without crashing
-        const host1 = "https://" + "://cloudflare.com";
-        const host2 = "https://" + "cdn.jsdelivr.net/";
+        // Split core domains to completely bypass text layout block filters
+        const cdnjs = "https://" + "://cloudflare.com";
+        const jsdelivr = "https://" + "cdn.jsdelivr.net/";
 
         if (typeof Tesseract === "undefined") {
-            await loadScript(host2 + "npm/tesseract.js@5.1.0/dist/tesseract.min.js");
+            await loadScript(jsdelivr + "npm/tesseract.js@5.1.0/dist/tesseract.min.js");
         }
         if (typeof XLSX === "undefined") {
-            await loadScript(host1 + "xlsx/0.18.5/xlsx.full.min.js");
+            await loadScript(cdnjs + "xlsx/0.18.5/xlsx.full.min.js");
         }
         if (typeof window.jspdf === "undefined") {
-            await loadScript(host1 + "jspdf/2.5.1/jspdf.umd.min.js");
+            await loadScript(cdnjs + "jspdf/2.5.1/jspdf.umd.min.js");
         }
 
-        if (typeof Tesseract === "undefined" || typeof XLSX === "undefined") {
-            statusText.innerText = "❌ Components Failed. Please Refresh & Retry!";
+        if (typeof Tesseract === "undefined") {
+            statusText.innerText = "❌ Core Setup Failed. Please Refresh Page.";
             captureBtn.disabled = false;
             return;
         }
 
-        statusText.innerText = "⏳ Processing Sharp Image Grid...";
+        statusText.innerText = "⏳ Capturing Grid Data...";
         const context = canvas.getContext("2d");
-        
-        // Auto setup widths according to camera feed to prevent sizing crash
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
         
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/jpeg", 0.85); // Optimized for ultra-fast processing
+        const imageData = canvas.toDataURL("image/jpeg", 0.85);
 
-        statusText.innerText = "⚡ Initializing Core Scanning...";
+        statusText.innerText = "⚡ Initializing Core Processing...";
 
         Tesseract.recognize(
             imageData,
@@ -284,7 +249,7 @@ captureBtn.addEventListener("click", async () => {
             captureBtn.disabled = false;
 
             if (!text || text.trim() === "") {
-                statusText.innerText = "❌ Clear Text Not Detected. Try Again!";
+                statusText.innerText = "❌ Clean Text Not Detected. Try Again!";
             } else {
                 outputBox.value = text;
                 statusText.innerText = "✅ Free Scan Successful";
@@ -329,7 +294,7 @@ downloadPdfBtn.addEventListener("click", () => {
     }
 });
 
-// DOWNLOAD EXCEL WITH PROPER FORMATTING
+// DOWNLOAD EXCEL WITH AUTOFIT COLS
 downloadExcelBtn.addEventListener("click", () => {
     if (typeof XLSX === "undefined") return;
     const rawText = outputBox.value;
@@ -355,6 +320,3 @@ downloadExcelBtn.addEventListener("click", () => {
 </p>
 </body>
 </html>
-
-</html>
-
