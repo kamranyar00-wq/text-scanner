@@ -161,26 +161,38 @@ const downloadTxtBtn = document.getElementById("download-txt");
 const downloadPdfBtn = document.getElementById("download-pdf");
 const downloadExcelBtn = document.getElementById("download-excel");
 
-// START CAMERA WITH HIGH RESOLUTION FOR A4
+// START CAMERA (MOBILE COMPATIBLE FIX)
 async function startCamera() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const constraints = {
             video: {
-                facingMode: "environment",
-                width: { ideal: 1920 }, 
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
                 height: { ideal: 1080 }
             },
             audio: false
-        });
+        };
+        
+        // Purane aur naye mobile browsers dono ke liye bypass switch
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
         statusText.innerText = "✅ Camera Ready";
     } catch (error) {
         console.error(error);
-        statusText.innerText = "❌ Camera Access Denied";
+        
+        // Backup switch agar high resolution crash kare
+        try {
+            const basicStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            video.srcObject = basicStream;
+            statusText.innerText = "✅ Camera Ready (Basic Mode)";
+        } catch (fallbackError) {
+            statusText.innerText = "❌ Camera Access Denied";
+        }
     }
 }
 
 startCamera();
+
 
 // DYNAMIC LOADER TO BYPASS GITHUB FILTER
 function loadScript(src) {
