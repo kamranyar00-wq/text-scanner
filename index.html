@@ -3,20 +3,56 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Exact Page Scanner (Layout Preserved)</title>
+<title>Document Scanner Pro (Exact Copy)</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#f4f6fb;text-align:center;padding:20px}
-.container{max-width:600px;margin:auto;background:#fff;padding:20px;border-radius:12px}
-video{width:100%;border-radius:10px}
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:8px;font-weight:bold}
-#scan{background:#007bff;color:#fff}
-#pdf{background:#ff9800;color:#fff}
-#excel{background:#6f42c1;color:#fff}
-img{width:100%;margin-top:10px;border:1px solid #ddd;border-radius:8px}
+body{
+    font-family:Arial;
+    background:#f5f6fb;
+    padding:20px;
+    text-align:center;
+}
+
+.container{
+    max-width:600px;
+    margin:auto;
+    background:#fff;
+    padding:20px;
+    border-radius:12px;
+}
+
+video{
+    width:100%;
+    border-radius:10px;
+    background:black;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+#scan{background:#007bff;color:white;}
+#pdf{background:#ff9800;color:white;}
+
+#status{
+    margin-top:10px;
+    font-weight:bold;
+}
+
+img{
+    width:100%;
+    margin-top:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
 </style>
 </head>
 
@@ -24,19 +60,18 @@ img{width:100%;margin-top:10px;border:1px solid #ddd;border-radius:8px}
 
 <div class="container">
 
-<h2>📄 Exact Page Scanner (No Layout Loss)</h2>
+<h2>📄 Document Scanner Pro (Exact Copy)</h2>
 
 <video id="video" autoplay playsinline></video>
 <canvas id="canvas" style="display:none;"></canvas>
 
-<button id="scan">📷 Capture Full Page</button>
+<button id="scan">📷 Scan Document</button>
 
-<p id="status">Ready</p>
+<p id="status">Camera starting...</p>
 
 <img id="preview"/>
 
-<button id="pdf">📄 Download SAME PAGE PDF</button>
-<button id="excel">📊 Export Excel (Image Based)</button>
+<button id="pdf">📄 Download EXACT PDF</button>
 
 </div>
 
@@ -49,17 +84,18 @@ const status = document.getElementById("status");
 
 let lastImage = null;
 
-// CAMERA
+// ================= CAMERA =================
 async function startCamera(){
 const stream = await navigator.mediaDevices.getUserMedia({
 video:{facingMode:"environment"}
 });
 video.srcObject = stream;
+status.innerText = "✅ Camera Ready";
 }
 startCamera();
 
 
-// ================= CAPTURE FULL PAGE =================
+// ================= SCAN FULL PAGE =================
 document.getElementById("scan").onclick = () => {
 
 const ctx = canvas.getContext("2d");
@@ -73,11 +109,11 @@ lastImage = canvas.toDataURL("image/jpeg",1.0);
 
 preview.src = lastImage;
 
-status.innerText = "✅ Page Captured (Exact Copy)";
+status.innerText = "✅ Document Captured (Exact Copy)";
 };
 
 
-// ================= PDF (EXACT SAME PAGE IMAGE) =================
+// ================= PDF (REAL SCANNER STYLE) =================
 document.getElementById("pdf").onclick = () => {
 
 if(!lastImage) return;
@@ -86,31 +122,14 @@ const { jsPDF } = window.jspdf;
 
 const doc = new jsPDF("p","mm","a4");
 
+// full page image (no text conversion)
 doc.addImage(lastImage,"JPEG",0,0,210,297);
 
-doc.save("exact_page.pdf");
-};
+// 🔥 FOOTER ADDED (your requirement)
+doc.setFontSize(10);
+doc.text("Powered by Kamran Akhtar", 70, 290);
 
-
-// ================= EXCEL (IMAGE EMBED STYLE) =================
-document.getElementById("excel").onclick = () => {
-
-if(!lastImage) return;
-
-// Excel cannot perfectly store layout like image,
-// so we store image inside sheet
-
-const wb = XLSX.utils.book_new();
-const ws = XLSX.utils.aoa_to_sheet([
-["📄 Scanned Page (Open PDF for exact view)"],
-["Image saved in PDF format better"]
-]);
-
-ws["!cols"] = [{wch:50}];
-
-XLSX.utils.book_append_sheet(wb,ws,"Scan");
-
-XLSX.writeFile(wb,"scan.xlsx");
+doc.save("scanned_document.pdf");
 };
 
 </script>
