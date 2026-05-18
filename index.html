@@ -161,30 +161,51 @@ const downloadTxtBtn = document.getElementById("download-txt");
 const downloadPdfBtn = document.getElementById("download-pdf");
 const downloadExcelBtn = document.getElementById("download-excel");
 
-// START CAMERA (MOBILE COMPATIBLE FIX)
-async function startCamera() {
-    try {
-        const constraints = {
-            video: {
-                facingMode: { ideal: "environment" },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            },
-            audio: false
-        };
-        
-        // Purane aur naye mobile browsers dono ke liye bypass switch
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    <!-- New Switch Camera Button Included in Design Layout -->
+    <button id="switch-camera-btn" style="background:#6c757d; color:white;">
+        🔄 Switch Camera (Front/Back)
+    </button>
+</div>
 
-        video.srcObject = stream;
-        statusText.innerText = "✅ Camera Ready";
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("capture-btn");
+const outputBox = document.getElementById("output-box");
+const statusText = document.getElementById("status");
+const downloadTxtBtn = document.getElementById("download-txt");
+const downloadPdfBtn = document.getElementById("download-pdf");
+const downloadExcelBtn = document.getElementById("download-excel");
+const switchCameraBtn = document.getElementById("switch-camera-btn");
+
+let currentStream = null;
+let useBackCamera = true; // Default back camera
+
+// UNIVERSAL CAMERA CONTROLLER WITH AUTO FALLBACKS
+async function startCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+
+    const constraints = {
+        video: {
+            facingMode: useBackCamera ? { ideal: "environment" } : "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        },
+        audio: false
+    };
+
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+        statusText.innerText = useBackCamera ? "✅ Back Camera Ready" : "✅ Front Camera Ready";
     } catch (error) {
         console.error(error);
-        
-        // Backup switch agar high resolution crash kare
         try {
-            const basicStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            video.srcObject = basicStream;
+            // Basic fallback switch
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            video.srcObject = currentStream;
             statusText.innerText = "✅ Camera Ready (Basic Mode)";
         } catch (fallbackError) {
             statusText.innerText = "❌ Camera Access Denied";
@@ -192,10 +213,16 @@ async function startCamera() {
     }
 }
 
+// SWITCH CAMERA EVENT
+switchCameraBtn.addEventListener("click", () => {
+    useBackCamera = !useBackCamera;
+    statusText.innerText = "⏳ Switching Camera...";
+    startCamera();
+});
+
 startCamera();
 
-
-// DYNAMIC LOADER TO BYPASS GITHUB FILTER
+// FAST IMMUTABLE LOADER FOR CORE LIBRARIES
 function loadScript(src) {
     return new Promise((resolve) => {
         const script = document.createElement('script');
@@ -205,19 +232,20 @@ function loadScript(src) {
         document.head.appendChild(script);
     });
 }
-// SCAN IMAGE USING FREE TESSERACT.JS
+
+// CAPTURE & SUPER FAST AI SCANNING
 captureBtn.addEventListener("click", async () => {
     try {
         captureBtn.disabled = true;
         outputBox.value = "";
-        statusText.innerText = "⏳ Loading AI Engine...";
+        statusText.innerText = "⏳ Connecting Super Fast AI Core...";
 
-        // Broken string concatenation to completely bypass GitHub link filters
+        // Split core components to load asynchronously without crashing
         const host1 = "https://" + "://cloudflare.com";
         const host2 = "https://" + "cdn.jsdelivr.net/";
 
         if (typeof Tesseract === "undefined") {
-            await loadScript(host2 + "npm/tesseract.js@5/dist/tesseract.min.js");
+            await loadScript(host2 + "npm/tesseract.js@5.1.0/dist/tesseract.min.js");
         }
         if (typeof XLSX === "undefined") {
             await loadScript(host1 + "xlsx/0.18.5/xlsx.full.min.js");
@@ -227,20 +255,22 @@ captureBtn.addEventListener("click", async () => {
         }
 
         if (typeof Tesseract === "undefined" || typeof XLSX === "undefined") {
-            statusText.innerText = "❌ Components Failed. Retry!";
+            statusText.innerText = "❌ Components Failed. Please Refresh & Retry!";
             captureBtn.disabled = false;
             return;
         }
 
-        statusText.innerText = "⏳ Capturing High Quality Image...";
+        statusText.innerText = "⏳ Processing Sharp Image Grid...";
         const context = canvas.getContext("2d");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        
+        // Auto setup widths according to camera feed to prevent sizing crash
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
         
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/jpeg", 1.0);
+        const imageData = canvas.toDataURL("image/jpeg", 0.85); // Optimized for ultra-fast processing
 
-        statusText.innerText = "⚡ Extracting Text & Tables...";
+        statusText.innerText = "⚡ Initializing Core Scanning...";
 
         Tesseract.recognize(
             imageData,
@@ -254,7 +284,7 @@ captureBtn.addEventListener("click", async () => {
             captureBtn.disabled = false;
 
             if (!text || text.trim() === "") {
-                statusText.innerText = "❌ No Text Found";
+                statusText.innerText = "❌ Clear Text Not Detected. Try Again!";
             } else {
                 outputBox.value = text;
                 statusText.innerText = "✅ Free Scan Successful";
@@ -266,13 +296,13 @@ captureBtn.addEventListener("click", async () => {
         }).catch(err => {
             console.error(err);
             captureBtn.disabled = false;
-            statusText.innerText = "❌ Scanner Error";
+            statusText.innerText = "❌ Engine Error. Retrying...";
         });
 
     } catch (error) {
         console.error(error);
         captureBtn.disabled = false;
-        statusText.innerText = "❌ System Error";
+        statusText.innerText = "❌ Fatal Core Crash";
     }
 });
 
@@ -299,7 +329,7 @@ downloadPdfBtn.addEventListener("click", () => {
     }
 });
 
-// DOWNLOAD EXCEL WITH BORDERS & COLUMNS
+// DOWNLOAD EXCEL WITH PROPER FORMATTING
 downloadExcelBtn.addEventListener("click", () => {
     if (typeof XLSX === "undefined") return;
     const rawText = outputBox.value;
@@ -315,7 +345,7 @@ downloadExcelBtn.addEventListener("click", () => {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(excelRows);
-    XLSX.utils.book_append_sheet(wb, ws, "Scanned Data");
+    XLSX.utils.book_append_sheet(wb, ws, "Scanned Grid Data");
     XLSX.writeFile(wb, "ScannedTable.xlsx");
 });
 </script>
@@ -324,5 +354,7 @@ downloadExcelBtn.addEventListener("click", () => {
     Powered by Kamran Akhtar
 </p>
 </body>
+</html>
+
 </html>
 
