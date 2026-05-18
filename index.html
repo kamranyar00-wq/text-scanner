@@ -1,137 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Super Fast Free OCR & Excel Scanner</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Super Fast Free OCR & Excel Scanner</title>
 
-    <style>
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-        body{
-            font-family:Arial, sans-serif;
-            background:#f4f7f6;
-            padding:20px;
-            text-align:center;
-        }
+body{
+    font-family:Arial, sans-serif;
+    background:#f4f7f6;
+    padding:20px;
+    text-align:center;
+}
 
-        .container{
-            max-width:550px;
-            margin:auto;
-            background:white;
-            padding:20px;
-            border-radius:12px;
-            box-shadow:0 4px 10px rgba(0,0,0,0.1);
-        }
+.container{
+    max-width:550px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
 
-        h2{
-            margin-bottom:15px;
-            color:#333;
-        }
+h2{
+    margin-bottom:15px;
+    color:#333;
+}
 
-        video{
-            width:100%;
-            border-radius:10px;
-            background:black;
-            margin-bottom:15px;
-        }
+video{
+    width:100%;
+    max-height:400px;
+    border-radius:10px;
+    background:black;
+    margin-bottom:15px;
+}
 
-        button{
-            width:100%;
-            padding:14px;
-            margin-top:10px;
-            border:none;
-            border-radius:8px;
-            font-size:16px;
-            font-weight:bold;
-            cursor:pointer;
-            transition:0.3s;
-        }
+button{
+    width:100%;
+    padding:14px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
 
-        #capture-btn{
-            background:#007bff;
-            color:white;
-        }
+#capture-btn{
+    background:#007bff;
+    color:white;
+}
 
-        #capture-btn:hover{
-            background:#0056b3;
-        }
+#capture-btn:hover{
+    background:#0056b3;
+}
 
-        .download-btn{
-            background:#28a745;
-            color:white;
-        }
+.download-btn{
+    background:#28a745;
+    color:white;
+}
 
-        .download-btn:hover{
-            background:#1f7e34;
-        }
+.download-btn:hover{
+    background:#1f7e34;
+}
 
-        #download-excel {
-            background:#ff9800;
-            color:white;
-        }
+#download-excel{
+    background:#ff9800;
+    color:white;
+}
 
-        #download-excel:hover {
-            background:#e68a00;
-        }
+#download-excel:hover{
+    background:#e68a00;
+}
 
-        #switch-camera-btn {
-            background:#6c757d;
-            color:white;
-        }
+button:disabled{
+    background:#cccccc;
+    cursor:not-allowed;
+}
 
-        #switch-camera-btn:hover {
-            background:#5a6268;
-        }
+#status{
+    margin-top:15px;
+    font-weight:bold;
+    color:#ff5722;
+}
 
-        button:disabled{
-            background:#cccccc;
-            cursor:not-allowed;
-        }
+textarea{
+    width:100%;
+    height:180px;
+    margin-top:15px;
+    padding:12px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    resize:none;
+    font-size:15px;
+}
 
-        #status{
-            margin-top:15px;
-            font-weight:bold;
-            color:#ff5722;
-        }
-
-        textarea{
-            width:100%;
-            height:180px;
-            margin-top:15px;
-            padding:12px;
-            border-radius:8px;
-            border:1px solid #ccc;
-            resize:none;
-            font-size:15px;
-        }
-
-        canvas{
-            display:none;
-        }
-    </style>
+canvas{
+    display:none;
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
     <h2>📸 Paper To Text & Excel Scanner</h2>
 
-    <video id="video" autoplay playsinline style="width:100%; max-height:400px; background:#000; border-radius:10px;"></video>
+    <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
 
-    <button id="capture-btn">📷 Capture & Scan Text</button>
+    <button id="capture-btn">
+        📷 Capture & Scan Text
+    </button>
 
-    <div id="status">Status: Camera Starting...</div>
+    <div id="status">
+        Status: Camera Starting...
+    </div>
 
-    <textarea id="output-box" placeholder="Scanned text will appear here..."></textarea>
+    <textarea
+        id="output-box"
+        placeholder="Scanned text will appear here..."
+    ></textarea>
 
-    <button id="download-txt" class="download-btn" disabled>📥 Download TXT</button>
-    <button id="download-pdf" class="download-btn" disabled>📄 Download PDF</button>
-    <button id="download-excel" class="download-btn" disabled>📊 Download EXCEL (.xlsx)</button>
+    <button id="download-txt"
+        class="download-btn"
+        disabled>
+        📥 Download TXT
+    </button>
+
+    <button id="download-pdf"
+        class="download-btn"
+        disabled>
+        📄 Download PDF
+    </button>
+
+    <button id="download-excel"
+        class="download-btn"
+        disabled>
+        📊 Download EXCEL (.xlsx)
+    </button>
 </div>
 
 <script>
@@ -146,178 +160,349 @@ const downloadExcelBtn = document.getElementById("download-excel");
 
 let currentStream = null;
 
-function loadScript(src) {
-    return new Promise((resolve) => {
-        const s = document.createElement('script');
+function loadScript(src){
+    return new Promise((resolve)=>{
+        const s = document.createElement("script");
         s.src = src;
-        s.onload = () => resolve(true);
-        s.onerror = () => resolve(false);
+        s.onload = ()=> resolve(true);
+        s.onerror = ()=> resolve(false);
         document.head.appendChild(s);
     });
 }
 
-// STABLE NATIVE ENVIRONMENT LOAD ENGINE
-async function startCamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
+// CAMERA START
+async function startCamera(){
 
-    // Direct basic parameters to load main mobile lenses instantly
-    const constraints = {
-        video: {
-            facingMode: "environment"
-        },
-        audio: false
-    };
+    try{
 
-  try {
-    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if(currentStream){
+            currentStream.getTracks().forEach(track=>track.stop());
+        }
 
-    video.srcObject = currentStream;
-      video.addEventListener("loadedmetadata", () => {
-    video.play();
-});
+        const constraints = {
+            video:{
+                facingMode:{ ideal:"environment" },
+                width:{ ideal:1280 },
+                height:{ ideal:720 }
+            },
+            audio:false
+        };
 
-    await video.play(); // ADD THIS
+        currentStream =
+            await navigator.mediaDevices
+            .getUserMedia(constraints);
 
-    statusText.innerText = "✅ Back Camera Loaded Perfectly";
-} catch (error) {
-        console.error("Standard mode failed, running generic bypass...", error);
-        try {
-            // Ultimate native generic camera track connector
-            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = currentStream;
+
+        await video.play();
+
+        statusText.innerText =
+            "✅ Back Camera Loaded Successfully";
+
+    } catch(error){
+
+        console.error(error);
+
+        try{
+
+            currentStream =
+                await navigator.mediaDevices
+                .getUserMedia({
+                    video:true,
+                    audio:false
+                });
+
             video.srcObject = currentStream;
-            statusText.innerText = "✅ Camera Active (Auto Sync Mode)";
-        } catch (finalError) {
-            statusText.innerText = "❌ Camera Blocked. Please Reset Browser Permissions.";
+
+            await video.play();
+
+            statusText.innerText =
+                "✅ Camera Active (Auto Mode)";
+
+        } catch(finalError){
+
+            console.error(finalError);
+
+            statusText.innerText =
+                "❌ Camera Blocked. Allow Camera Permission.";
         }
     }
 }
 
-// Auto execution loop
 startCamera();
 
-// AI GRID SCANNING SYSTEM
-captureBtn.addEventListener("click", async () => {
-    try {
-        captureBtn.disabled = true;
-        outputBox.value = "";
-        statusText.innerText = "⏳ Connecting Core Components...";
+// OCR SCAN
+captureBtn.addEventListener(
+"click",
+async ()=>{
 
-        const cdnjs = "https://cdnjs.cloudflare.com/ajax/libs/";
-const jsdelivr = "https://cdn.jsdelivr.net/";
+try{
 
-        if (typeof Tesseract === "undefined") {
-            await loadScript(jsdelivr + "npm/tesseract.js@5.1.0/dist/tesseract.min.js");
-        }
-        if (typeof XLSX === "undefined") {
-            await loadScript(cdnjs + "xlsx/0.18.5/xlsx.full.min.js");
-        }
-        if (typeof window.jspdf === "undefined") {
-            await loadScript(cdnjs + "jspdf/2.5.1/jspdf.umd.min.js");
-        }
+captureBtn.disabled = true;
+outputBox.value = "";
 
-        if (typeof Tesseract === "undefined" || typeof XLSX === "undefined") {
-            statusText.innerText = "❌ Network Core Error. Refresh Page.";
-            captureBtn.disabled = false;
-            return;
-        }
+statusText.innerText =
+"⏳ Loading OCR Engine...";
 
-        statusText.innerText = "⏳ Capturing Sharp Frame...";
-        if (video.videoWidth === 0) {
-    statusText.innerText = "❌ Camera not ready yet.";
+// FIXED CDN LINKS
+const cdnjs =
+"https://cdnjs.cloudflare.com/ajax/libs/";
+
+const jsdelivr =
+"https://cdn.jsdelivr.net/";
+
+// LOAD OCR
+if(typeof Tesseract === "undefined"){
+    await loadScript(
+        jsdelivr +
+        "npm/tesseract.js@5.1.0/dist/tesseract.min.js"
+    );
+}
+
+// LOAD EXCEL
+if(typeof XLSX === "undefined"){
+    await loadScript(
+        cdnjs +
+        "xlsx/0.18.5/xlsx.full.min.js"
+    );
+}
+
+// LOAD PDF
+if(typeof window.jspdf === "undefined"){
+    await loadScript(
+        cdnjs +
+        "jspdf/2.5.1/jspdf.umd.min.js"
+    );
+}
+
+if(
+typeof Tesseract === "undefined" ||
+typeof XLSX === "undefined"
+){
+    statusText.innerText =
+    "❌ Network Error. Refresh Page.";
     captureBtn.disabled = false;
     return;
 }
-        const context = canvas.getContext("2d");
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/jpeg", 0.85);
 
-        statusText.innerText = "⚡ Initializing Core Processing...";
+// CAMERA READY CHECK
+if(video.videoWidth === 0){
 
-        Tesseract.recognize(
-            imageData,
-            'eng',
-            { logger: m => {
-                if(m.status === 'recognizing') {
-                    statusText.innerText = `⚡ Scanning: ${Math.floor(m.progress * 100)}%`;
-                }
-            }}
-        ).then(({ data: { text } }) => {
-            captureBtn.disabled = false;
+    statusText.innerText =
+    "❌ Camera Not Ready Yet.";
 
-            if (!text || text.trim() === "") {
-                statusText.innerText = "❌ Text Not Detected. Try Again.";
-            } else {
-                outputBox.value = text;
-                statusText.innerText = "✅ Free Scan Successful";
+    captureBtn.disabled = false;
+    return;
+}
 
-                downloadTxtBtn.disabled = false;
-                downloadPdfBtn.disabled = false;
-                downloadExcelBtn.disabled = false;
-            }
-        }).catch(err => {
-            console.error(err);
-            captureBtn.disabled = false;
-            statusText.innerText = "❌ Scanner Grid Error.";
-        });
+statusText.innerText =
+"📸 Capturing Image...";
 
-    } catch (error) {
-        console.error(error);
-        captureBtn.disabled = false;
-        statusText.innerText = "❌ Fatal System Crash";
-    }
+const context =
+canvas.getContext("2d");
+
+canvas.width =
+video.videoWidth;
+
+canvas.height =
+video.videoHeight;
+
+context.drawImage(
+video,
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+const imageData =
+canvas.toDataURL(
+"image/jpeg",
+1
+);
+
+statusText.innerText =
+"⚡ Scanning Text...";
+
+const result =
+await Tesseract.recognize(
+imageData,
+"eng",
+{
+logger:(m)=>{
+if(
+m.status === "recognizing text"
+){
+statusText.innerText =
+`⚡ Scanning ${
+Math.floor(
+m.progress * 100
+)
+}%`;
+}
+}
+}
+);
+
+const text =
+result.data.text;
+
+captureBtn.disabled = false;
+
+if(!text.trim()){
+
+statusText.innerText =
+"❌ No Text Detected.";
+
+return;
+}
+
+outputBox.value = text;
+
+statusText.innerText =
+"✅ Scan Successful";
+
+downloadTxtBtn.disabled = false;
+downloadPdfBtn.disabled = false;
+downloadExcelBtn.disabled = false;
+
+}catch(error){
+
+console.error(error);
+
+captureBtn.disabled = false;
+
+statusText.innerText =
+"❌ Scanner Error.";
+
+}
 });
 
-// DOWNLOAD TXT
-downloadTxtBtn.addEventListener("click", () => {
-    const blob = new Blob([outputBox.value], { type: "text/plain" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "ScannedText.txt";
-    link.click();
+// TXT DOWNLOAD
+downloadTxtBtn.addEventListener(
+"click",
+()=>{
+
+const blob =
+new Blob(
+[outputBox.value],
+{
+type:"text/plain"
+}
+);
+
+const link =
+document.createElement("a");
+
+link.href =
+URL.createObjectURL(blob);
+
+link.download =
+"ScannedText.txt";
+
+link.click();
 });
 
-// DOWNLOAD PDF
-downloadPdfBtn.addEventListener("click", () => {
-    try {
-        const { jsPDF } = window.jspdf ? window.jspdf : window;
-        if (!jsPDF) return;
-        const doc = new jsPDF();
-        const lines = doc.splitTextToSize(outputBox.value, 180);
-        doc.text(lines, 10, 10);
-        doc.save("ScannedDocument.pdf");
-    } catch (e) {
-        console.error(e);
-    }
+// PDF DOWNLOAD
+downloadPdfBtn.addEventListener(
+"click",
+()=>{
+
+try{
+
+const {
+jsPDF
+} = window.jspdf;
+
+const doc =
+new jsPDF();
+
+const lines =
+doc.splitTextToSize(
+outputBox.value,
+180
+);
+
+doc.text(
+lines,
+10,
+10
+);
+
+doc.save(
+"ScannedDocument.pdf"
+);
+
+}catch(e){
+
+console.error(e);
+
+}
 });
 
-// DOWNLOAD EXCEL 
-downloadExcelBtn.addEventListener("click", () => {
-    if (typeof XLSX === "undefined") return;
-    const rawText = outputBox.value;
-    const lines = rawText.split('\n');
-    const excelRows = [];
-    
-    lines.forEach(line => {
-        if(line.trim() !== "") {
-            const columns = line.split(/\s{2,}|\t/);
-            excelRows.push(columns);
-        }
-    });
+// EXCEL DOWNLOAD
+downloadExcelBtn
+.addEventListener(
+"click",
+()=>{
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(excelRows);
-    XLSX.utils.book_append_sheet(wb, ws, "Scanned Data");
-    XLSX.writeFile(wb, "ScannedTable.xlsx");
+if(
+typeof XLSX ===
+"undefined"
+)return;
+
+const rawText =
+outputBox.value;
+
+const lines =
+rawText.split("\n");
+
+const rows = [];
+
+lines.forEach(line=>{
+
+if(line.trim()){
+
+rows.push(
+line.split(
+/\s{2,}|\t/
+)
+);
+
+}
+});
+
+const wb =
+XLSX.utils.book_new();
+
+const ws =
+XLSX.utils
+.aoa_to_sheet(rows);
+
+XLSX.utils
+.book_append_sheet(
+wb,
+ws,
+"Scanned Data"
+);
+
+XLSX.writeFile(
+wb,
+"ScannedTable.xlsx"
+);
+
 });
 </script>
 
-<p style="text-align: center; color: #888888; font-size: 14px; margin-top: 20px; font-weight: bold;">
-    Powered by Kamran Akhtar
+<p style="
+text-align:center;
+color:#888;
+font-size:14px;
+margin-top:20px;
+font-weight:bold;
+">
+Powered by Kamran Akhtar
 </p>
+
 </body>
 </html>
