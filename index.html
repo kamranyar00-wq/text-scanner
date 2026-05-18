@@ -124,7 +124,8 @@
     <canvas id="canvas"></canvas>
 
     <button id="capture-btn">📷 Capture & Scan Text</button>
-    <button id="switch-camera-btn">🔄 Switch Camera (Front/Back)</button>
+ <select id="camera-select" style="width:100%; padding:14px; margin-top:10px; border-radius:8px; font-size:16px; font-weight:bold; background:#6c757d; color:white; border:none; text-align-last:center; cursor:pointer;"></select>
+
 
     <div id="status">Status: Camera Starting...</div>
 
@@ -160,56 +161,84 @@ function loadScript(src) {
     });
 }
 
-// SUPER-STABLE MOBILE CAMERA HANDLER (100% ACCESS DENIED AND BACK CAMERA FIX)
+// MULTI-CAMERA HARDWARE SELECTOR ENGINE
+const cameraSelect = document.getElementById("camera-select");
+let videoDevices = [];
+
+async function getAvailableCameras() {
+    try {
+        // Hardware level par devices permission request karna
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        cameraSelect.innerHTML = "";
+        
+        if (videoDevices.length === 0) {
+            const opt = document.createElement("option");
+            opt.text = "No Camera Detected";
+            cameraSelect.appendChild(opt);
+            return;
+        }
+
+        // Saare detected cameras ko dropdown list me add karna
+        videoDevices.forEach((device, index) => {
+            const option = document.createElement("option");
+            option.value = device.deviceId;
+            // Agar camera ka naam mil jaye to wo show karna warna generic number dena
+            option.text = device.label || `Camera ${index + 1} (${device.label.toLowerCase().includes('back') ? 'Back' : 'Front'})`;
+            cameraSelect.appendChild(option);
+        });
+
+        // Auto selection: list ka aakhri camera aksar back camera hota hai mobile me
+        if (videoDevices.length > 1) {
+            cameraSelect.selectedIndex = videoDevices.length - 1;
+        }
+    } catch (e) {
+        console.error("Error enumerating devices: ", e);
+        statusText.innerText = "❌ Hardware Search Error";
+    }
+}
+
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
+    let selectedDeviceId = cameraSelect.value;
+    
     const constraints = {
-        video: {
-            facingMode: useBackCamera ? { exact: "environment" } : "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        },
+        video: selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : { facingMode: "environment" },
         audio: false
     };
 
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
-        statusText.innerText = useBackCamera ? "✅ Back Camera Ready" : "✅ Front Camera Ready";
+        statusText.innerText = "✅ Selected Camera Ready";
     } catch (error) {
-        console.error("Exact mode failed, trying ideal mode...", error);
-        
+        console.error("Direct device ID access failed, running fallback...", error);
         try {
-            const fallbackConstraints = {
-                video: {
-                    facingMode: useBackCamera ? "environment" : "user"
-                },
-                audio: false
-            };
-            currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+            currentStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" }, 
+                audio: false 
+            });
             video.srcObject = currentStream;
-            statusText.innerText = useBackCamera ? "✅ Back Camera (Auto)" : "✅ Front Camera (Auto)";
+            statusText.innerText = "✅ Camera Ready (Auto Mode)";
         } catch (fallbackError) {
-            console.error("Ideal mode failed, loading basic configuration...", fallbackError);
-            
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                video.srcObject = currentStream;
-                statusText.innerText = "✅ Camera Ready (Basic Mode)";
-            } catch (finalError) {
-                statusText.innerText = "❌ Camera Access Denied. Check Permissions.";
-            }
+            statusText.innerText = "❌ Camera Access Denied. Check Permissions.";
         }
     }
 }
 
-// TOGGLE SWITCH EVENT
-switchCameraBtn.addEventListener("click", () => {
-    useBackCamera = !useBackCamera;
-    statusText.innerText = "⏳ Switching Camera Layout...";
+// Dropdown option change hone par automatic camera switch karna
+cameraSelect.addEventListener("change", () => {
+    statusText.innerText = "⏳ Loading Selected Camera Device...";
+    startCamera();
+});
+
+// Shuruat me devices dhoondna aur phir pehla camera active karna
+getAvailableCameras().then(() => {
     startCamera();
 });
 
