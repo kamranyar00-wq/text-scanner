@@ -160,31 +160,61 @@ function loadScript(src) {
     });
 }
 
-// STABLE MOBILE CAMERA CONTROLLER
+// SMART HARDWARE CAMERA CONTROLLER (100% BACK CAMERA SCAN FIX)
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
-    const constraints = {
-        video: {
-            facingMode: useBackCamera ? { ideal: "environment" } : "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        },
-        audio: false
-    };
-
     try {
+        let constraints = { video: true, audio: false };
+        
+        // Mobile ke saare cameras ko scan karna hardware level par
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        if (videoDevices.length > 0) {
+            // Agar back camera chalana hai to list me se back ya environment camera dhoondna
+            let selectedDevice = null;
+            if (useBackCamera) {
+                selectedDevice = videoDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('environment'));
+                // Agar label blank ho to list ka aakhri camera aam tor par back camera hota hai
+                if (!selectedDevice) selectedDevice = videoDevices[videoDevices.length - 1];
+            } else {
+                selectedDevice = videoDevices.find(device => device.label.toLowerCase().includes('front') || device.label.toLowerCase().includes('user'));
+                if (!selectedDevice) selectedDevice = videoDevices[0];
+            }
+
+            if (selectedDevice && selectedDevice.deviceId) {
+                constraints = {
+                    video: {
+                        deviceId: { exact: selectedDevice.deviceId },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                };
+            } else {
+                constraints = {
+                    video: { facingMode: useBackCamera ? "environment" : "user" },
+                    audio: false
+                };
+            }
+        }
+
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
         statusText.innerText = useBackCamera ? "✅ Back Camera Ready" : "✅ Front Camera Ready";
     } catch (error) {
         console.error(error);
         try {
-            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            // Final fallback standard setup
+            currentStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: useBackCamera ? "environment" : "user" }, 
+                audio: false 
+            });
             video.srcObject = currentStream;
-            statusText.innerText = "✅ Camera Ready (Basic Mode)";
+            statusText.innerText = useBackCamera ? "✅ Back Camera (Standard)" : "✅ Front Camera (Standard)";
         } catch (fallbackError) {
             statusText.innerText = "❌ Camera Access Denied";
         }
@@ -194,7 +224,7 @@ async function startCamera() {
 // TOGGLE SWITCH EVENT
 switchCameraBtn.addEventListener("click", () => {
     useBackCamera = !useBackCamera;
-    statusText.innerText = "⏳ Switching Camera...";
+    statusText.innerText = "⏳ Switching Camera Hardware...";
     startCamera();
 });
 
